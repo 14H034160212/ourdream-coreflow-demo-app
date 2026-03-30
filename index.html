@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Companion OS Demo</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">◎</div>
+        <div>
+          <h1>Companion OS</h1>
+          <p>Coreflow-style demo for AI companion infra</p>
+        </div>
+      </div>
+
+      <section class="panel">
+        <h2>Character</h2>
+        <label class="label">Persona</label>
+        <select id="personaSelect">
+          <option value="Neon Dreamer">Neon Dreamer</option>
+          <option value="Calm Architect">Calm Architect</option>
+          <option value="Moonlit Traveler">Moonlit Traveler</option>
+        </select>
+
+        <label class="label">Tone</label>
+        <select id="toneSelect">
+          <option value="warm">warm</option>
+          <option value="playful">playful</option>
+          <option value="intimate">intimate</option>
+          <option value="mysterious">mysterious</option>
+        </select>
+
+        <div class="kpi-grid">
+          <div class="kpi">
+            <span>Realtime path</span>
+            <strong id="realtimeStatus">healthy</strong>
+          </div>
+          <div class="kpi">
+            <span>Media queue</span>
+            <strong id="queueStatus">idle</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Pinned Memory</h2>
+          <button id="addMemoryBtn" class="ghost-btn">Add</button>
+        </div>
+        <div id="memoryList" class="memory-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Media Jobs</h2>
+          <button id="clearJobsBtn" class="ghost-btn">Clear</button>
+        </div>
+        <div id="jobList" class="job-list"></div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h2>Realtime Companion Chat</h2>
+          <p>Fast chat path + transparent async media orchestration</p>
+        </div>
+        <div class="action-row">
+          <button id="voiceBtn" class="action-btn">🎙 Start Voice</button>
+          <button id="speakBtn" class="action-btn secondary">🔊 Voice Reply On</button>
+        </div>
+      </header>
+
+      <section class="metrics">
+        <div class="metric-card">
+          <span>First reply latency</span>
+          <strong id="replyLatency">—</strong>
+        </div>
+        <div class="metric-card">
+          <span>Voice round-trip</span>
+          <strong id="voiceLatency">—</strong>
+        </div>
+        <div class="metric-card">
+          <span>Credits used</span>
+          <strong id="creditsUsed">0</strong>
+        </div>
+        <div class="metric-card">
+          <span>GPU lanes</span>
+          <strong>0-1 realtime / 2-5 image / 6-7 video</strong>
+        </div>
+      </section>
+
+      <section id="chatLog" class="chat-log"></section>
+
+      <form id="composer" class="composer">
+        <textarea id="messageInput" placeholder="Talk to your companion or ask for a selfie / video..." rows="3"></textarea>
+        <div class="composer-actions">
+          <span class="hint">Tip: ask for an image or video to see async job routing.</span>
+          <button type="submit" class="send-btn">Send</button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <dialog id="memoryDialog">
+    <form method="dialog" class="dialog-form">
+      <h3>Add memory</h3>
+      <textarea id="memoryInput" rows="4" placeholder="e.g. User likes rainy cyberpunk cafes."></textarea>
+      <div class="dialog-actions">
+        <button value="cancel" class="ghost-btn">Cancel</button>
+        <button id="saveMemoryBtn" value="default" class="send-btn">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="./script.js"></script>
+</body>
+</html>
