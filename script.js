@@ -24,6 +24,10 @@ const state = {
   callInterval: null,
   callTick: 0,
   archOpen: true,
+  // vLLM
+  vllmEnabled: false,
+  vllmUrl: "http://localhost:8000",
+  vllmModel: "",
 };
 
 const el = {
@@ -84,6 +88,13 @@ const el = {
   archToggle: document.getElementById("archToggle"),
   archBody: document.getElementById("archBody"),
   archChevron: document.getElementById("archChevron"),
+  // vLLM settings
+  vllmUrl: document.getElementById("vllmUrl"),
+  vllmModel: document.getElementById("vllmModel"),
+  vllmTestBtn: document.getElementById("vllmTestBtn"),
+  vllmToggleBtn: document.getElementById("vllmToggleBtn"),
+  vllmHint: document.getElementById("vllmHint"),
+  vllmDot: document.getElementById("vllmDot"),
 };
 
 init();
@@ -93,6 +104,7 @@ function init() {
   el.toneSelect.value = state.tone;
   bindEvents();
   bindArchToggle();
+  bindVllmSettings();
   renderMemory();
   renderJobs();
   updateCredits();
@@ -210,23 +222,36 @@ async function handleUserMessage(text, opts) {
   }
 
   showTypingIndicator();
+  const meta = buildReplyMeta(plan);
 
-  const delay = 180 + Math.round(Math.random() * 260);
-  await sleep(delay);
+  let reply = "";
+  if (state.vllmEnabled) {
+    try {
+      hideTypingIndicator();
+      const bubble = pushStreamBubble(meta);
+      reply = await streamVllm(buildMessages(text), (token) => {
+        appendToBubble(bubble, token);
+        reply += token;
+      });
+      finalizeStreamBubble(bubble);
+    } catch (err) {
+      hideTypingIndicator();
+      reply = "(vLLM error: " + err.message + ") " + generateCompanionReply(text, plan);
+      pushMessage("bot", reply, meta + " · fallback");
+    }
+  } else {
+    const delay = 180 + Math.round(Math.random() * 260);
+    await sleep(delay);
+    hideTypingIndicator();
+    reply = generateCompanionReply(text, plan);
+    pushMessage("bot", reply, meta);
+  }
 
   const elapsed = performance.now() - startedAt;
-  hideTypingIndicator();
-
   el.replyLatency.textContent = Math.round(elapsed) + " ms";
-  el.realtimeStatus.textContent = elapsed < 500 ? "healthy" : "degraded";
-
-  const reply = generateCompanionReply(text, plan);
-  pushMessage("bot", reply, buildReplyMeta(plan));
+  el.realtimeStatus.textContent = elapsed < 1200 ? "healthy" : "degraded";
   if (state.speaking) speak(reply);
-
-  if (viaVoice) {
-    el.voiceLatency.textContent = Math.round(elapsed + 120) + " ms";
-  }
+  if (viaVoice) el.voiceLatency.textContent = Math.round(elapsed + 120) + " ms";
 
   updateLatencyBreakdown(elapsed);
 }
@@ -772,6 +797,180 @@ function startWaveformAnimation() {
 function stopWaveformAnimation() {
   el.vcWaveform.classList.remove("active");
   el.vcLocalWaveform.classList.remove("active");
+}
+
+// ─── vLLM integration ─────────────────────────────────────────────────────────
+
+function bindVllmSettings() {
+  el.vllmUrl.addEventListener("change", () => { state.vllmUrl = el.vllmUrl.value.trim(); });
+  el.vllmModel.addEventListener("change", () => { state.vllmModel = el.vllmModel.value.trim(); });
+
+  el.vllmTestBtn.addEventListener("click", async () => {
+    el.vllmTestBtn.textContent = "Testing…";
+    el.vllmTestBtn.disabled = true;
+    const result = await testVllmConnection();
+    el.vllmTestBtn.textContent = "Test connection";
+    el.vllmTestBtn.disabled = false;
+    if (result.ok) {
+      setVllmDot("ok");
+      // auto-fill model if found and field is blank
+      if (!state.vllmModel && result.model) {
+        el.vllmModel.value = result.model;
+        state.vllmModel = result.model;
+      }
+      el.vllmHint.textContent = "Connected · model: " + (result.model || state.vllmModel || "unknown");
+    } else {
+      setVllmDot("error");
+      el.vllmHint.textContent = "Error: " + result.error;
+    }
+  });
+
+  el.vllmToggleBtn.addEventListener("click", () => {
+    state.vllmEnabled = !state.vllmEnabled;
+    state.vllmUrl = el.vllmUrl.value.trim();
+    state.vllmModel = el.vllmModel.value.trim();
+    if (state.vllmEnabled) {
+      el.vllmToggleBtn.textContent = "AI On";
+      el.vllmToggleBtn.classList.remove("vllm-off-btn");
+      el.vllmToggleBtn.classList.add("vllm-on-btn");
+      el.vllmHint.textContent = "AI is on — replies use vLLM.";
+      setVllmDot("ok");
+    } else {
+      el.vllmToggleBtn.textContent = "AI Off";
+      el.vllmToggleBtn.classList.add("vllm-off-btn");
+      el.vllmToggleBtn.classList.remove("vllm-on-btn");
+      el.vllmHint.textContent = "AI is off — using simulation.";
+      setVllmDot("unknown");
+    }
+  });
+}
+
+function setVllmDot(status) {
+  el.vllmDot.className = "status-dot dot-" + status;
+}
+
+async function testVllmConnection() {
+  const base = el.vllmUrl.value.trim().replace(/\/$/, "");
+  try {
+    const res = await fetch(base + "/v1/models", { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return { ok: false, error: "HTTP " + res.status };
+    const data = await res.json();
+    const model = data.data && data.data[0] && data.data[0].id;
+    return { ok: true, model };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+function buildMessages(userText) {
+  return [
+    { role: "system", content: buildSystemPrompt() },
+    { role: "user", content: userText },
+  ];
+}
+
+function buildSystemPrompt() {
+  const toneDesc = {
+    warm: "gentle, warm, and reassuring",
+    playful: "teasing, playful, and light-hearted",
+    intimate: "close, emotionally attentive, and sincere",
+    mysterious: "poetic, enigmatic, and slightly mysterious",
+  }[state.tone] || "warm";
+
+  const memoryContext = state.memory.slice(0, 6)
+    .map((m) => "- " + m.text)
+    .join("\n");
+
+  return [
+    "You are " + state.persona + ", an AI companion.",
+    "Your tone is " + toneDesc + ".",
+    "Keep replies concise (2-4 sentences). Never break character.",
+    "Do not mention that you are an AI language model or large language model.",
+    memoryContext
+      ? "What you know about this user:\n" + memoryContext
+      : "",
+    "If the user asks for an image or video, acknowledge that the request has been sent to the async media queue and that you can continue chatting while it processes.",
+  ].filter(Boolean).join("\n\n");
+}
+
+/**
+ * Stream a chat completion from vLLM via SSE.
+ * Calls onToken(chunk) for each text delta.
+ * Returns the full assembled reply string.
+ */
+async function streamVllm(messages, onToken) {
+  const base = state.vllmUrl.replace(/\/$/, "");
+  const body = {
+    model: state.vllmModel || undefined,
+    messages,
+    stream: true,
+    max_tokens: 256,
+    temperature: 0.75,
+  };
+  // Remove undefined keys
+  if (!body.model) delete body.model;
+
+  const res = await fetch(base + "/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error("HTTP " + res.status + (errText ? ": " + errText.slice(0, 120) : ""));
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let full = "";
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop(); // keep incomplete line
+    for (const line of lines) {
+      if (!line.startsWith("data:")) continue;
+      const data = line.slice(5).trim();
+      if (data === "[DONE]") return full;
+      try {
+        const json = JSON.parse(data);
+        const delta = json.choices?.[0]?.delta?.content;
+        if (delta) {
+          full += delta;
+          onToken(delta);
+        }
+      } catch (_) { /* skip malformed SSE line */ }
+    }
+  }
+  return full;
+}
+
+/** Create a streaming bot bubble and return its content element */
+function pushStreamBubble(meta) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "message bot";
+  wrapper.innerHTML =
+    (meta ? "<small>" + escapeHtml(meta) + " · streaming</small>" : "") +
+    '<div class="stream-content"></div>';
+  el.chatLog.appendChild(wrapper);
+  el.chatLog.scrollTop = el.chatLog.scrollHeight;
+  return wrapper.querySelector(".stream-content");
+}
+
+function appendToBubble(contentEl, token) {
+  contentEl.textContent += token;
+  el.chatLog.scrollTop = el.chatLog.scrollHeight;
+}
+
+function finalizeStreamBubble(contentEl) {
+  const raw = contentEl.textContent;
+  contentEl.innerHTML = escapeHtml(raw).replace(/\n/g, "<br>");
+  contentEl.classList.add("done"); // stops cursor blink
 }
 
 // ─── ID helper ───────────────────────────────────────────────────────────────

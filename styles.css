@@ -675,6 +675,54 @@ dialog {
   border-top: 1px solid var(--border); padding-top: 10px;
 }
 
+/* ─── vLLM settings panel ─────────────────────────────────────────────────── */
+.panel input[type="text"] {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.panel input[type="text"]:focus { border-color: var(--accent); }
+
+.vllm-row {
+  display: flex; gap: 8px; margin-top: 12px; align-items: center;
+}
+.vllm-hint {
+  margin-top: 10px; font-size: 12px;
+  line-height: 1.4; color: var(--muted);
+}
+.vllm-on-btn  { background: linear-gradient(135deg, #4ade80, #22c55e); color: #052e16; }
+.vllm-off-btn { background: #2f365d; }
+
+/* Connection status dot */
+.status-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0; display: inline-block;
+  transition: background 0.3s;
+}
+.dot-ok      { background: var(--ok); box-shadow: 0 0 6px rgba(74,222,128,0.6); }
+.dot-error   { background: var(--danger); box-shadow: 0 0 6px rgba(248,113,113,0.6); }
+.dot-unknown { background: var(--muted); }
+
+/* Streaming bubble cursor blink */
+.stream-content::after {
+  content: "▌";
+  opacity: 1;
+  animation: cursorBlink 0.7s step-end infinite;
+  font-size: 0.85em; color: var(--accent);
+}
+.stream-content.done::after { display: none; }
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 960px) {
   .app-shell { grid-template-columns: 1fr; }

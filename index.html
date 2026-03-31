@@ -72,6 +72,22 @@
         </div>
         <div id="jobList" class="job-list"></div>
       </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>AI Backend</h2>
+          <span id="vllmDot" class="status-dot dot-unknown" title="Connection status"></span>
+        </div>
+        <label class="label">vLLM endpoint</label>
+        <input id="vllmUrl" type="text" value="http://localhost:8000" placeholder="http://localhost:8000" />
+        <label class="label">Model</label>
+        <input id="vllmModel" type="text" value="" placeholder="e.g. Qwen/Qwen2.5-7B-Instruct" />
+        <div class="vllm-row">
+          <button id="vllmTestBtn" class="ghost-btn">Test connection</button>
+          <button id="vllmToggleBtn" class="action-btn vllm-off-btn">AI Off</button>
+        </div>
+        <p id="vllmHint" class="hint vllm-hint">AI is off — using simulation.</p>
+      </section>
     </aside>
 
     <main class="main">
