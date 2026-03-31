@@ -723,6 +723,35 @@ dialog {
   50%       { opacity: 0; }
 }
 
+/* ─── Image backend panel extras ─────────────────────────────────────────── */
+.panel-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+.sub-section-head {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.sub-section-title {
+  font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--muted);
+}
+.img-on-btn  { background: linear-gradient(135deg, #c084fc, #8b7dff); color: white; }
+.img-off-btn { background: #2f365d; }
+
+/* Real generated image in chat */
+.real-gen-image {
+  display: block;
+  width: 100%; max-width: 400px;
+  border-radius: 18px;
+  margin-top: 10px;
+  animation: mediaReveal 0.5s ease-out;
+  border: 1px solid var(--border);
+}
+
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 960px) {
   .app-shell { grid-template-columns: 1fr; }

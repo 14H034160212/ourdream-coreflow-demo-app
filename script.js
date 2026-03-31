@@ -28,6 +28,12 @@ const state = {
   vllmEnabled: false,
   vllmUrl: "http://localhost:8000",
   vllmModel: "",
+  // Image backend (Stable Diffusion)
+  imgEnabled: false,
+  backendUrl: "http://localhost:8100",
+  sdModel: "runwayml/stable-diffusion-v1-5",
+  // Multi-turn conversation history
+  conversationHistory: [],
 };
 
 const el = {
@@ -95,6 +101,13 @@ const el = {
   vllmToggleBtn: document.getElementById("vllmToggleBtn"),
   vllmHint: document.getElementById("vllmHint"),
   vllmDot: document.getElementById("vllmDot"),
+  // Image backend
+  imgBackendUrl: document.getElementById("imgBackendUrl"),
+  sdModel: document.getElementById("sdModel"),
+  imgTestBtn: document.getElementById("imgTestBtn"),
+  imgToggleBtn: document.getElementById("imgToggleBtn"),
+  imgHint: document.getElementById("imgHint"),
+  imgDot: document.getElementById("imgDot"),
 };
 
 init();
@@ -105,6 +118,7 @@ function init() {
   bindEvents();
   bindArchToggle();
   bindVllmSettings();
+  bindImgBackendSettings();
   renderMemory();
   renderJobs();
   updateCredits();
@@ -253,6 +267,15 @@ async function handleUserMessage(text, opts) {
   if (state.speaking) speak(reply);
   if (viaVoice) el.voiceLatency.textContent = Math.round(elapsed + 120) + " ms";
 
+  // Maintain multi-turn history for vLLM (keep last 10 turns = 20 messages)
+  if (reply) {
+    state.conversationHistory.push({ role: "user", content: text });
+    state.conversationHistory.push({ role: "assistant", content: reply });
+    if (state.conversationHistory.length > 20) {
+      state.conversationHistory = state.conversationHistory.slice(-20);
+    }
+  }
+
   updateLatencyBreakdown(elapsed);
 }
 
@@ -346,6 +369,10 @@ function enqueueJob(job) {
   state.creditsUsed += job.credits;
   persistJobs();
   updateCredits();
+  // Submit image jobs to the real SD backend if enabled
+  if (state.imgEnabled && job.type === "image") {
+    submitJobToBackend(job);
+  }
 }
 
 function tickJobScheduler() {
@@ -353,6 +380,9 @@ function tickJobScheduler() {
     let changed = false;
     const activeJobs = state.jobs.filter((job) => job.status !== "done");
     activeJobs.forEach((job, idx) => {
+      // Backend-linked jobs are driven by pollBackendJob — skip local simulation
+      if (job.backend_job_id) return;
+
       if (job.status === "queued") {
         if (idx === 0) { job.status = "running"; changed = true; }
       } else if (job.status === "running") {
@@ -865,6 +895,7 @@ async function testVllmConnection() {
 function buildMessages(userText) {
   return [
     { role: "system", content: buildSystemPrompt() },
+    ...state.conversationHistory.slice(-10),   // last 5 turns for context
     { role: "user", content: userText },
   ];
 }
@@ -971,6 +1002,129 @@ function finalizeStreamBubble(contentEl) {
   const raw = contentEl.textContent;
   contentEl.innerHTML = escapeHtml(raw).replace(/\n/g, "<br>");
   contentEl.classList.add("done"); // stops cursor blink
+}
+
+// ─── Image backend (Stable Diffusion) ────────────────────────────────────────
+
+function bindImgBackendSettings() {
+  el.imgBackendUrl.addEventListener("change", () => { state.backendUrl = el.imgBackendUrl.value.trim(); });
+  el.sdModel.addEventListener("change", () => { state.sdModel = el.sdModel.value.trim(); });
+
+  el.imgTestBtn.addEventListener("click", async () => {
+    el.imgTestBtn.textContent = "Testing…";
+    el.imgTestBtn.disabled = true;
+    const base = el.imgBackendUrl.value.trim().replace(/\/$/, "");
+    try {
+      const res = await fetch(base + "/health", { signal: AbortSignal.timeout(5000) });
+      const data = await res.json();
+      el.imgDot.className = "status-dot dot-ok";
+      el.imgHint.textContent =
+        "Connected · device: " + data.device + (data.model_loaded ? " · model: " + data.model_loaded : "");
+    } catch (e) {
+      el.imgDot.className = "status-dot dot-error";
+      el.imgHint.textContent = "Error: " + e.message + " — run server/main.py first";
+    }
+    el.imgTestBtn.textContent = "Test";
+    el.imgTestBtn.disabled = false;
+  });
+
+  el.imgToggleBtn.addEventListener("click", () => {
+    state.imgEnabled = !state.imgEnabled;
+    state.backendUrl = el.imgBackendUrl.value.trim();
+    state.sdModel = el.sdModel.value.trim();
+    if (state.imgEnabled) {
+      el.imgToggleBtn.textContent = "Images On";
+      el.imgToggleBtn.classList.remove("img-off-btn");
+      el.imgToggleBtn.classList.add("img-on-btn");
+      el.imgDot.className = "status-dot dot-ok";
+      el.imgHint.textContent = "Images on — SD generates real photos.";
+    } else {
+      el.imgToggleBtn.textContent = "Images Off";
+      el.imgToggleBtn.classList.add("img-off-btn");
+      el.imgToggleBtn.classList.remove("img-on-btn");
+      el.imgDot.className = "status-dot dot-unknown";
+      el.imgHint.textContent = "Images off — using gradient placeholders.";
+    }
+  });
+}
+
+async function submitJobToBackend(localJob) {
+  const base = state.backendUrl.replace(/\/$/, "");
+  try {
+    const res = await fetch(base + "/api/generate/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: localJob.prompt,
+        model_id: state.sdModel || "runwayml/stable-diffusion-v1-5",
+        persona: state.persona,
+        steps: 25,
+        width: 512,
+        height: 512,
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    localJob.backend_job_id = data.job_id;
+    persistJobs();
+    pollBackendJob(localJob.id, data.job_id);
+  } catch (e) {
+    console.warn("Image backend unavailable, falling back to simulation:", e.message);
+    showToast("Image backend unreachable — using placeholder", "warn");
+    // Allow local scheduler to pick up the job normally
+    localJob.backend_job_id = null;
+  }
+}
+
+function pollBackendJob(localJobId, backendJobId) {
+  const base = state.backendUrl.replace(/\/$/, "");
+  const interval = setInterval(async () => {
+    const localJob = state.jobs.find((j) => j.id === localJobId);
+    if (!localJob) { clearInterval(interval); return; }
+
+    try {
+      const res = await fetch(base + "/api/jobs/" + backendJobId,
+        { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // Sync progress to sidebar
+      if (typeof data.progress === "number") {
+        localJob.progress = data.progress;
+        renderJobs();
+      }
+
+      if (data.status === "done" && data.result_b64) {
+        clearInterval(interval);
+        localJob.status = "done";
+        localJob.progress = 100;
+        persistJobs();
+        renderJobs();
+        pushRealImageToChat(localJob, data.result_b64);
+        showToast("Image ready — generated with SD", "ok");
+      } else if (data.status === "error") {
+        clearInterval(interval);
+        localJob.status = "done";
+        persistJobs();
+        renderJobs();
+        showToast("Image generation failed: " + (data.error || "unknown error"), "warn");
+      }
+    } catch (_) { /* continue polling silently */ }
+  }, 2000);
+}
+
+function pushRealImageToChat(job, imgDataUrl) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "message bot media-result-card";
+  wrapper.innerHTML =
+    "<small>generated · " + job.lane + " · " + job.credits + " credits · " +
+      (job.backend_job_id ? state.sdModel.split("/").pop() : "simulation") +
+    "</small>" +
+    '<img class="real-gen-image" src="' + imgDataUrl +
+    '" alt="' + escapeHtml(truncate(job.prompt, 60)) + '" />';
+  el.chatLog.appendChild(wrapper);
+  el.chatLog.scrollTop = el.chatLog.scrollHeight;
 }
 
 // ─── ID helper ───────────────────────────────────────────────────────────────

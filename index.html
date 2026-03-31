@@ -87,6 +87,29 @@
           <button id="vllmToggleBtn" class="action-btn vllm-off-btn">AI Off</button>
         </div>
         <p id="vllmHint" class="hint vllm-hint">AI is off — using simulation.</p>
+
+        <div class="panel-divider"></div>
+
+        <div class="sub-section-head">
+          <span class="sub-section-title">Image Generation (Diffusion)</span>
+          <span id="imgDot" class="status-dot dot-unknown" title="Image backend status"></span>
+        </div>
+        <label class="label">Backend URL</label>
+        <input id="imgBackendUrl" type="text" value="http://localhost:8100" placeholder="http://localhost:8100" />
+        <label class="label">SD model</label>
+        <input id="sdModel" type="text" value="runwayml/stable-diffusion-v1-5"
+               list="sdModelList" placeholder="HuggingFace model ID" />
+        <datalist id="sdModelList">
+          <option value="runwayml/stable-diffusion-v1-5">SD 1.5 — General (4 GB VRAM)</option>
+          <option value="SG161222/Realistic_Vision_V6.0_B1_noVAE">Realistic Vision 6 — Portrait (4 GB)</option>
+          <option value="Lykon/dreamshaper-8">DreamShaper 8 — Semi-realistic (4 GB)</option>
+          <option value="stabilityai/stable-diffusion-xl-base-1.0">SDXL Base — High quality (8 GB)</option>
+        </datalist>
+        <div class="vllm-row">
+          <button id="imgTestBtn" class="ghost-btn">Test</button>
+          <button id="imgToggleBtn" class="action-btn img-off-btn">Images Off</button>
+        </div>
+        <p id="imgHint" class="hint vllm-hint">Images off — using gradient placeholders.</p>
       </section>
     </aside>
 
