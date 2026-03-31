@@ -43,6 +43,14 @@
             <span>Media queue</span>
             <strong id="queueStatus">idle</strong>
           </div>
+          <div class="kpi">
+            <span>Messages</span>
+            <strong id="msgCount">0</strong>
+          </div>
+          <div class="kpi">
+            <span>Session</span>
+            <strong id="sessionTimer">00:00</strong>
+          </div>
         </div>
       </section>
 
@@ -50,6 +58,9 @@
         <div class="section-head">
           <h2>Pinned Memory</h2>
           <button id="addMemoryBtn" class="ghost-btn">Add</button>
+        </div>
+        <div id="memorySearch" class="memory-search-wrap">
+          <input id="memorySearchInput" type="text" placeholder="Search memory…" />
         </div>
         <div id="memoryList" class="memory-list"></div>
       </section>
@@ -72,6 +83,7 @@
         <div class="action-row">
           <button id="voiceBtn" class="action-btn">🎙 Start Voice</button>
           <button id="speakBtn" class="action-btn secondary">🔊 Voice Reply On</button>
+          <button id="videoCallBtn" class="action-btn call-btn">📹 Start Call</button>
         </div>
       </header>
 
@@ -94,10 +106,95 @@
         </div>
       </section>
 
-      <section id="chatLog" class="chat-log"></section>
+      <!-- Latency breakdown panel (hidden until first reply) -->
+      <section id="latencyBreakdown" class="latency-breakdown hidden">
+        <div class="lb-title">Latency Budget Breakdown</div>
+        <div class="lb-bars">
+          <div class="lb-row">
+            <span class="lb-label">Capture + encode</span>
+            <div class="lb-bar-wrap"><div id="lbCapture" class="lb-bar capture"></div></div>
+            <span id="lbCaptureMs" class="lb-ms">—</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-label">Transport</span>
+            <div class="lb-bar-wrap"><div id="lbTransport" class="lb-bar transport"></div></div>
+            <span id="lbTransportMs" class="lb-ms">—</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-label">Agent logic</span>
+            <div class="lb-bar-wrap"><div id="lbAgent" class="lb-bar agent"></div></div>
+            <span id="lbAgentMs" class="lb-ms">—</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-label">TTS / dispatch</span>
+            <div class="lb-bar-wrap"><div id="lbTts" class="lb-bar tts"></div></div>
+            <span id="lbTtsMs" class="lb-ms">—</span>
+          </div>
+        </div>
+        <div class="lb-total">Total fast-path target: <strong id="lbTotal">—</strong> <span class="lb-target">(target &lt;200ms)</span></div>
+      </section>
+
+      <!-- Architecture pipeline strip -->
+      <section class="arch-strip" id="archStrip">
+        <div class="arch-header" id="archToggle">
+          <span class="arch-title">Architecture: How the Fast Path Works</span>
+          <span class="arch-chevron" id="archChevron">▼</span>
+        </div>
+        <div class="arch-body" id="archBody">
+          <div class="arch-steps">
+            <div class="arch-step">
+              <div class="arch-icon">🎙</div>
+              <div class="arch-step-label">1. Capture</div>
+              <div class="arch-step-sub">Browser mic/cam → encode</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+              <div class="arch-icon">📡</div>
+              <div class="arch-step-label">2. Transport</div>
+              <div class="arch-step-sub">WebRTC / low-latency relay</div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step highlight-step">
+              <div class="arch-icon">⚡</div>
+              <div class="arch-step-label">3. Fast Path</div>
+              <div class="arch-step-sub">Text · voice reply<br>GPU lanes 0-1</div>
+            </div>
+            <div class="arch-arrow fork-arrow">→</div>
+            <div class="arch-fork">
+              <div class="arch-step fork-top">
+                <div class="arch-icon">🖼</div>
+                <div class="arch-step-label">4a. Image Queue</div>
+                <div class="arch-step-sub">Async · GPU 2-5</div>
+              </div>
+              <div class="arch-step fork-bottom">
+                <div class="arch-icon">🎬</div>
+                <div class="arch-step-label">4b. Video Queue</div>
+                <div class="arch-step-sub">Async · GPU 6-7</div>
+              </div>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+              <div class="arch-icon">📊</div>
+              <div class="arch-step-label">5. Observability</div>
+              <div class="arch-step-sub">Latency · credits · queue depth</div>
+            </div>
+          </div>
+          <p class="arch-note">The fast path (steps 1-3) targets &lt;200ms overhead. Heavy media tasks route to async queues so conversation is never blocked.</p>
+        </div>
+      </section>
+
+      <section id="chatLog" class="chat-log">
+        <!-- typing indicator injected here by JS -->
+      </section>
 
       <form id="composer" class="composer">
-        <textarea id="messageInput" placeholder="Talk to your companion or ask for a selfie / video..." rows="3"></textarea>
+        <textarea id="messageInput" placeholder="Talk to your companion or ask for a selfie / video…" rows="3"></textarea>
+        <div class="quick-chips" id="quickChips">
+          <button type="button" class="chip" data-prompt="Tell me something about yourself.">Introduce yourself</button>
+          <button type="button" class="chip" data-prompt="Take a selfie for me.">📸 Selfie</button>
+          <button type="button" class="chip" data-prompt="Send me a short video of you dancing.">🎬 Video clip</button>
+          <button type="button" class="chip" data-prompt="Remember that I love stargazing.">📌 Pin memory</button>
+        </div>
         <div class="composer-actions">
           <span class="hint">Tip: ask for an image or video to see async job routing.</span>
           <button type="submit" class="send-btn">Send</button>
@@ -105,6 +202,68 @@
       </form>
     </main>
   </div>
+
+  <!-- Video call overlay -->
+  <div id="videoCallOverlay" class="video-call-overlay hidden">
+    <div class="vc-panel">
+      <div class="vc-header">
+        <span class="vc-title">Live Call — <span id="vcPersonaName">Neon Dreamer</span></span>
+        <div class="vc-badges">
+          <span class="badge ok" id="vcStatus">Connecting…</span>
+          <span class="badge accent" id="vcLatencyBadge">— ms</span>
+        </div>
+      </div>
+      <div class="vc-main">
+        <div class="vc-remote">
+          <div class="vc-avatar" id="vcAvatar">
+            <div class="vc-avatar-ring"></div>
+            <div class="vc-avatar-inner" id="vcAvatarInner">◎</div>
+          </div>
+          <div class="vc-waveform" id="vcWaveform">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="vc-caption" id="vcCaption"></div>
+        </div>
+        <div class="vc-local">
+          <div class="vc-local-label">You (mic)</div>
+          <div class="vc-local-waveform" id="vcLocalWaveform">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+      <div class="vc-metrics-row">
+        <div class="vc-metric">
+          <span>Transport</span>
+          <strong id="vcTransport">—</strong>
+        </div>
+        <div class="vc-metric">
+          <span>Agent loop</span>
+          <strong id="vcAgentLoop">—</strong>
+        </div>
+        <div class="vc-metric">
+          <span>TTS start</span>
+          <strong id="vcTtsStart">—</strong>
+        </div>
+        <div class="vc-metric">
+          <span>Round-trip</span>
+          <strong id="vcRoundTrip">—</strong>
+        </div>
+      </div>
+      <div class="vc-controls">
+        <button id="vcMuteBtn" class="vc-ctrl-btn">🎙 Mute</button>
+        <button id="vcEndBtn" class="vc-ctrl-btn danger">📵 End Call</button>
+        <button id="vcCaptureBtn" class="vc-ctrl-btn">📸 Capture</button>
+      </div>
+      <div class="vc-transcript-wrap">
+        <div class="vc-transcript-label">Live Transcript</div>
+        <div id="vcTranscriptLog" class="vc-transcript-log"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container"></div>
 
   <dialog id="memoryDialog">
     <form method="dialog" class="dialog-form">
