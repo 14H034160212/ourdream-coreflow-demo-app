@@ -33,88 +33,100 @@ body {
 
 /* ── HOME ──────────────────────────────────────────────────────────────── */
 #homeView {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background:
-    radial-gradient(ellipse 80% 40% at 20% 0%, rgba(168,85,247,0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 30% at 80% 100%, rgba(244,114,182,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 40% at 20% 0%, rgba(168,85,247,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 30% at 80% 100%, rgba(244,114,182,0.05) 0%, transparent 55%),
     #050509;
 }
 
 .home-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 24px 0;
+  padding: 14px 22px 0;
+  flex-shrink: 0;
 }
 .home-logo {
-  font-size: 20px; font-weight: 800;
+  font-size: 19px; font-weight: 800;
   background: linear-gradient(90deg, #f472b6 0%, #a855f7 50%, #818cf8 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   letter-spacing: -0.5px;
 }
 .home-hero {
-  padding: 28px 24px 6px;
+  padding: 10px 22px 4px;
+  flex-shrink: 0;
 }
 .home-hero-title {
-  font-size: 28px; font-weight: 800;
+  font-size: 22px; font-weight: 800;
   line-height: 1.2; letter-spacing: -0.5px;
   background: linear-gradient(135deg, #fff 0%, #e2d9f3 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 .home-hero-sub {
-  font-size: 13px; color: #6b6b88; line-height: 1.5;
+  font-size: 12px; color: #5a5a72; line-height: 1.4;
 }
 
 /* Filters bar */
 .home-filters {
-  display: flex; gap: 8px; padding: 16px 24px 4px;
+  display: flex; gap: 7px; padding: 8px 22px 6px;
   overflow-x: auto; scrollbar-width: none;
+  flex-shrink: 0;
 }
 .home-filters::-webkit-scrollbar { display: none; }
 .filter-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 6px 14px;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
   border-radius: 20px;
-  font-size: 12px; font-weight: 500;
-  white-space: nowrap;
-  cursor: pointer;
-  border: 1px solid #ffffff14;
-  background: transparent; color: #888;
+  font-size: 11px; font-weight: 500;
+  white-space: nowrap; cursor: pointer;
+  border: 1px solid #ffffff12;
+  background: transparent; color: #666;
   transition: all 0.15s;
 }
 .filter-chip.active {
-  background: linear-gradient(135deg, #7c3aed22, #db277722);
-  border-color: #a855f755;
+  background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(219,39,119,0.15));
+  border-color: rgba(168,85,247,0.45);
   color: #d8b4fe;
 }
-.filter-chip:hover { border-color: #ffffff22; color: #ccc; }
+.filter-chip:hover { border-color: #ffffff20; color: #bbb; }
 
-/* Grid */
+/* Grid — 3 columns, fills remaining viewport height */
 .girl-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
-  padding: 16px 20px 80px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 8px 14px 14px;
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 700px) {
+  .girl-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 8px 10px 10px; }
 }
 
-/* Character card — full bleed portrait, info overlaid */
+/* Character card — fills grid cell completely */
 .girl-card {
-  border-radius: 20px;
+  border-radius: 18px;
   overflow: hidden;
   cursor: pointer;
   position: relative;
-  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+  height: 100%;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s;
   background: #0d0d15;
 }
 .girl-card:hover {
-  transform: translateY(-6px) scale(1.015);
-  box-shadow: 0 24px 50px rgba(0,0,0,0.7), 0 0 30px rgba(168,85,247,0.18);
+  transform: translateY(-5px) scale(1.012);
+  box-shadow: 0 20px 45px rgba(0,0,0,0.7), 0 0 28px rgba(168,85,247,0.2);
 }
 .girl-card:active { transform: scale(0.98); }
 
-/* Portrait — fills entire card */
+/* Portrait — fills entire card height */
 .girl-portrait-zone {
   position: relative;
   width: 100%;
-  aspect-ratio: 9/13;
+  height: 100%;
   background: linear-gradient(160deg, var(--c1, #a855f7), var(--c2, #ec4899));
   overflow: hidden;
 }
@@ -597,47 +609,63 @@ body {
   position: relative; z-index: 5;
   height: 100%;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: space-between;
-  padding: 44px 24px 36px;
+  align-items: center;
+  padding: 0;
 }
 
+/* Top bar — compact, pinned to top */
 .call-top-row {
   width: 100%;
-  display: flex; align-items: flex-start; justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px 12px;
+  flex-shrink: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%);
 }
-.call-char-name { font-size: 26px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 5px; }
+.call-char-name { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 3px; }
 .call-status-badge {
-  display: inline-block; padding: 3px 10px;
+  display: inline-block; padding: 2px 9px;
   border-radius: 20px; font-size: 11px; font-weight: 600;
   background: #111; color: #555;
 }
 .call-status-badge.live { background: #071a0f; color: #4ade80; }
-.call-timer { font-size: 14px; font-weight: 500; color: #666; font-variant-numeric: tabular-nums; }
+.call-timer { font-size: 13px; font-weight: 500; color: #888; font-variant-numeric: tabular-nums; }
 
-/* Call portrait */
+/* Call portrait — large, fills most of screen */
 .call-portrait-outer {
   position: relative;
   display: flex; align-items: center; justify-content: center;
+  flex: 1;
 }
 .call-portrait-circle {
-  width: 240px; height: 240px;
+  width: min(420px, 72vmin);
+  height: min(420px, 72vmin);
   border-radius: 50%;
   position: relative; overflow: hidden;
   z-index: 1;
+  box-shadow: 0 0 80px rgba(168,85,247,0.25), 0 0 160px rgba(168,85,247,0.1);
 }
 .call-speak-ring {
-  position: absolute; inset: -14px;
+  position: absolute; inset: -18px;
   border-radius: 50%;
   border: 3px solid transparent;
   pointer-events: none; z-index: 0;
 }
 .call-speak-ring.active {
-  border-color: rgba(168,85,247,0.3);
+  border-color: rgba(168,85,247,0.35);
   animation: speakPulse 2s ease-in-out infinite;
 }
 @keyframes speakPulse {
   0%, 100% { transform: scale(1);    opacity: 0.3; }
-  50%       { transform: scale(1.08); opacity: 0.75; }
+  50%       { transform: scale(1.06); opacity: 0.8; }
+}
+
+/* Caption + controls — pinned to bottom */
+.call-bottom-area {
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 16px 24px 32px;
+  flex-shrink: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
 }
 
 /* Lip-sync mouth — driven by rAF amplitude simulation */

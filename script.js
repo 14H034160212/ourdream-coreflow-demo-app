@@ -616,12 +616,18 @@ function selectTTSVoice() {
   const load = () => {
     const voices = window.speechSynthesis.getVoices();
     if (!voices.length) return;
-    // Priority: neural Chinese female → cloud Chinese → any Chinese → English female → first
+    // Priority: best neural/cloud Chinese female → any Chinese → English female → first
     const checks = [
-      v => /zh/i.test(v.lang) && /Tingting|Sinji|Meijia|Hanhan|Yaoyao|Huihui|Ting-Ting|Google 普通话|Google 國語/i.test(v.name),
-      v => /zh/i.test(v.lang) && v.localService === false,
+      // Best: Google/Microsoft online neural voices (sound most natural)
+      v => /zh/i.test(v.lang) && !v.localService && /Google|Microsoft/i.test(v.name),
+      // macOS/iOS: Tingting, Sinji, Meijia — high quality
+      v => /zh/i.test(v.lang) && /Tingting|Ting-Ting|Sinji|Meijia|Hanhan|Yaoyao|Huihui/i.test(v.name),
+      // Any cloud/online Chinese voice
+      v => /zh/i.test(v.lang) && !v.localService,
+      // Any Chinese voice
       v => /zh-CN/i.test(v.lang),
       v => /zh/i.test(v.lang),
+      // English female fallback
       v => /en/i.test(v.lang) && /samantha|karen|moira|fiona|zira|hazel|female/i.test(v.name),
       () => voices[0],
     ];
@@ -719,17 +725,42 @@ function callAISpeak(text, expr) {
   }
 
   window.speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(spoken);
-  utt.lang   = lang;
-  utt.rate   = lang.startsWith("zh") ? 0.88 : 0.92;  // slightly slower = more natural
-  utt.pitch  = 1.08;
-  utt.volume = 1.0;
-  if (state.ttsVoice) utt.voice = state.ttsVoice;
+  speakNatural(spoken, lang, state.ttsVoice, () => {
+    state.callSpeaking = false;
+    stopLipSync();
+    onAISpeakEnd();
+  });
+}
 
-  const done = () => { state.callSpeaking = false; stopLipSync(); onAISpeakEnd(); };
-  utt.onend   = done;
-  utt.onerror = done;
-  window.speechSynthesis.speak(utt);
+// ── Natural phrase-by-phrase TTS — far less robotic than single utterance ──
+// Splits at punctuation, adds tiny inter-phrase gaps, higher pitch for cute feel
+function speakNatural(text, lang, voice, onDone) {
+  // Split into phrases at Chinese/English punctuation
+  const raw = text.split(/([，。！？、；…,.!?]+)/g);
+  const phrases = [];
+  for (let i = 0; i < raw.length; i += 2) {
+    const part = (raw[i] + (raw[i + 1] || "")).trim();
+    if (part) phrases.push(part);
+  }
+  if (!phrases.length) { onDone(); return; }
+
+  let idx = 0;
+  const isChinese = lang.startsWith("zh");
+
+  const speakOne = () => {
+    if (idx >= phrases.length || !state.callSpeaking) { onDone(); return; }
+    const utt = new SpeechSynthesisUtterance(phrases[idx++]);
+    utt.lang   = lang;
+    // Cute girl voice params: slightly faster on short phrases, higher pitch
+    utt.rate   = isChinese ? 0.9 + Math.random() * 0.06 : 0.93 + Math.random() * 0.05;
+    utt.pitch  = isChinese ? 1.22 : 1.15;   // noticeably higher = younger/cuter
+    utt.volume = 1.0;
+    if (voice) utt.voice = voice;
+    utt.onend   = () => setTimeout(speakOne, isChinese ? 55 : 40); // natural micro-pause
+    utt.onerror = onDone;
+    window.speechSynthesis.speak(utt);
+  };
+  speakOne();
 }
 
 function onAISpeakEnd() {
