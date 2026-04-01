@@ -186,7 +186,7 @@ const state = {
   // Media queue
   mediaQueue:    [],
   _queueId:      0,
-  // STT
+  // STT (chat)
   recording:     false,
   recognition:   null,
   // Camera
@@ -194,6 +194,11 @@ const state = {
   // Latency tracking
   callConnectTime: 0,
   lastReplyMs:   0,
+  // Video call voice
+  callSpeaking:  false,
+  callListening: false,
+  callRecognition: null,
+  ttsVoice:      null,
 };
 
 const $ = id => document.getElementById(id);
@@ -506,11 +511,7 @@ function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
 // ── Video call ─────────────────────────────────────────────────────────────
 function bindCall() {
   $("endCallBtn").addEventListener("click", endCall);
-  $("muteBtn").addEventListener("click", () => {
-    const on = $("muteBtn").dataset.muted !== "1";
-    $("muteBtn").dataset.muted = on ? "1" : "0";
-    $("muteBtn").textContent = on ? "🔇 解除静音" : "🎙 静音";
-  });
+  $("callMicBtn").addEventListener("click", toggleCallMic);
 }
 
 function startCall() {
@@ -518,28 +519,30 @@ function startCall() {
   state.callSeconds = 0;
   state.callTick = 0;
   state.callConnectTime = performance.now();
+  state.callSpeaking = false;
+  state.callListening = false;
 
   setPortraitEl($("callPortraitCircle"), $("callPortraitEmoji"), $("callPortraitPhoto"), char);
   $("callPortraitCircle").style.background = `linear-gradient(135deg,${char.colors[0]},${char.colors[1]})`;
   $("callBg").style.background =
-    `radial-gradient(ellipse at 50% 40%, ${char.colors[0]}40 0%, #07070e 65%)`;
+    `radial-gradient(ellipse at 50% 40%, ${char.colors[0]}40 0%, #02020a 65%)`;
   $("callCharName").textContent = char.name;
   $("callStatusBadge").textContent = "连接中…";
   $("callStatusBadge").className = "call-status-badge";
-  $("callCaption").textContent = "";
-  $("callCaption").style.opacity = "0";
+  setCallCaption("");
   $("callTimer").textContent = "00:00";
-  $("muteBtn").textContent = "🎙 静音";
-  $("muteBtn").dataset.muted = "0";
   $("metricConnect").textContent = "⚡ —ms";
   $("metricConnect").className = "metric-chip";
   $("metricReply").textContent = "💬 —ms";
   $("metricReply").className = "metric-chip";
 
+  const micBtn = $("callMicBtn");
+  micBtn.textContent = "🎙 说话";
+  micBtn.className = "ctrl-btn call-mic-btn";
+
+  selectTTSVoice();
   setExpression("neutral");
   showView("callView");
-
-  // Request local camera
   startLocalCamera();
 
   setTimeout(() => {
@@ -548,22 +551,18 @@ function startCall() {
     $("callStatusBadge").classList.add("live");
     $("callWaveform").classList.add("active");
     $("callSpeakRing").classList.add("active");
-
-    // Show connect latency
     $("metricConnect").textContent = `⚡ ${connectMs}ms`;
     $("metricConnect").classList.add("live");
-
-    // Show last reply latency from chat
     if (state.lastReplyMs > 0) {
       $("metricReply").textContent = `💬 ${state.lastReplyMs}ms`;
       $("metricReply").classList.add("live");
     }
 
-    const [cap, expr] = char.captions[0];
-    showCaption(cap);
-    setExpression(expr);
+    // AI greets the user with voice
+    const greeting = char.greetings[Math.floor(Math.random() * char.greetings.length)];
+    const expr = detectExpression(greeting);
+    callAISpeak(greeting, expr);
 
-    state.callInterval = setInterval(tickCall, 3200);
     state.callTimerInterval = setInterval(() => {
       state.callSeconds++;
       const m = String(Math.floor(state.callSeconds / 60)).padStart(2, "0");
@@ -572,58 +571,222 @@ function startCall() {
     }, 1000);
 
     if (state.sdEnabled) generateCallExpression(char, "happy");
-  }, 900);
+  }, 1000);
 }
 
 function endCall() {
-  clearInterval(state.callInterval);
   clearInterval(state.callTimerInterval);
-  state.callInterval = null;
   state.callTimerInterval = null;
+  // Stop TTS
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  // Stop STT
+  stopCallListen();
   $("callWaveform").classList.remove("active");
   $("callSpeakRing").classList.remove("active");
+  state.callSpeaking = false;
+  state.callListening = false;
   stopLocalCamera();
   setExpression(state.currentExpr);
   showView("chatView");
 }
 
-function tickCall() {
-  state.callTick++;
-  const char = state.currentChar;
-  const [cap, expr] = char.captions[state.callTick % char.captions.length];
-  showCaption(cap);
-  setExpression(expr);
+// ── TTS voice selection ────────────────────────────────────────────────────
+function selectTTSVoice() {
+  if (!window.speechSynthesis) return;
+  const load = () => {
+    const voices = window.speechSynthesis.getVoices();
+    // Prefer Chinese female voice
+    const preferred = voices.find(v => v.lang.startsWith("zh") && /female|woman|girl|Ting-Ting|Sinji|Meijia|Yaoyao|Huihui|Li|Na/i.test(v.name))
+      || voices.find(v => v.lang.startsWith("zh"))
+      || voices.find(v => v.lang.startsWith("en") && /female/i.test(v.name))
+      || voices[0] || null;
+    state.ttsVoice = preferred;
+  };
+  if (window.speechSynthesis.getVoices().length) load();
+  else window.speechSynthesis.addEventListener("voiceschanged", load, { once: true });
 }
 
-function showCaption(text) {
+// ── AI speaks during call ─────────────────────────────────────────────────
+function callAISpeak(text, expr) {
+  state.callSpeaking = true;
+  const micBtn = $("callMicBtn");
+  if (micBtn) { micBtn.textContent = "⏳ 回复中"; micBtn.className = "ctrl-btn call-mic-btn speaking"; }
+
+  setExpression(expr || detectExpression(text));
+  $("callWaveform").classList.add("active");
+  $("callSpeakRing").classList.add("active");
+  typeCaption(text);
+
+  if (!window.speechSynthesis) {
+    state.callSpeaking = false;
+    onAISpeakEnd();
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = "zh-CN";
+  utt.rate = 0.95;
+  utt.pitch = 1.1;
+  if (state.ttsVoice) utt.voice = state.ttsVoice;
+
+  utt.onend = () => {
+    state.callSpeaking = false;
+    onAISpeakEnd();
+  };
+  utt.onerror = () => {
+    state.callSpeaking = false;
+    onAISpeakEnd();
+  };
+
+  window.speechSynthesis.speak(utt);
+}
+
+function onAISpeakEnd() {
+  if (!state.callTimerInterval) return; // call already ended
+  const micBtn = $("callMicBtn");
+  if (micBtn) {
+    micBtn.textContent = "🎙 说话";
+    micBtn.className = "ctrl-btn call-mic-btn";
+  }
+  setExpression("neutral");
+}
+
+// Caption typewriter effect
+function typeCaption(text) {
   const el = $("callCaption");
-  el.style.opacity = "0";
-  setTimeout(() => { el.textContent = text; el.style.opacity = "1"; }, 250);
+  if (!el) return;
+  el.style.opacity = "1";
+  el.textContent = "";
+  let i = 0;
+  const tick = setInterval(() => {
+    el.textContent = text.slice(0, ++i);
+    if (i >= text.length) clearInterval(tick);
+  }, 50);
 }
 
-async function generateCallExpression(char, exprName) {
+function setCallCaption(text) {
+  const el = $("callCaption");
+  if (!el) return;
+  el.textContent = text;
+  el.style.opacity = text ? "1" : "0";
+}
+
+// ── Call mic (STT push-to-talk) ────────────────────────────────────────────
+function toggleCallMic() {
+  if (state.callSpeaking) return; // AI is talking, wait
+  if (state.callListening) { stopCallListen(); } else { startCallListen(); }
+}
+
+function startCallListen() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    setCallCaption("浏览器不支持语音，请使用 Chrome");
+    return;
+  }
+  const r = new SR();
+  r.lang = "zh-CN";
+  r.continuous = false;
+  r.interimResults = true;
+  state.callRecognition = r;
+  state.callListening = true;
+
+  const micBtn = $("callMicBtn");
+  if (micBtn) { micBtn.textContent = "🔴 聆听中…"; micBtn.classList.add("listening"); }
+  setCallCaption("…");
+  setExpression("neutral");
+
+  r.onresult = e => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join("");
+    setCallCaption(transcript);
+  };
+
+  r.onend = () => {
+    state.callListening = false;
+    state.callRecognition = null;
+    const micBtn = $("callMicBtn");
+    if (micBtn) { micBtn.textContent = "🎙 说话"; micBtn.className = "ctrl-btn call-mic-btn"; }
+    const text = $("callCaption")?.textContent?.trim();
+    if (text && text !== "…" && state.callTimerInterval) {
+      callHandleUserSpeech(text);
+    } else {
+      setCallCaption("");
+    }
+  };
+
+  r.onerror = () => {
+    state.callListening = false;
+    state.callRecognition = null;
+    const micBtn = $("callMicBtn");
+    if (micBtn) { micBtn.textContent = "🎙 说话"; micBtn.className = "ctrl-btn call-mic-btn"; }
+    setCallCaption("未能识别，请重试");
+    setTimeout(() => setCallCaption(""), 1500);
+  };
+
+  r.start();
+}
+
+function stopCallListen() {
+  state.callRecognition?.stop();
+  state.callRecognition = null;
+  state.callListening = false;
+  const micBtn = $("callMicBtn");
+  if (micBtn) { micBtn.textContent = "🎙 说话"; micBtn.className = "ctrl-btn call-mic-btn"; }
+}
+
+async function callHandleUserSpeech(userText) {
+  if (!state.currentChar || !state.callTimerInterval) return;
+  const t0 = performance.now();
+
+  setExpression("thinking");
+  setCallCaption("…");
+
+  // Add to chat history for context
+  state.history.push({ role: "user", content: userText });
+
+  let reply;
+  if (state.vllmEnabled) {
+    reply = await fetchVllmReply();
+  } else {
+    await sleep(500 + Math.random() * 400);
+    reply = simReply();
+  }
+
+  const elapsed = Math.round(performance.now() - t0);
+  state.lastReplyMs = elapsed;
+  $("metricReply").textContent = `💬 ${elapsed}ms`;
+  $("metricReply").classList.add("live");
+
+  state.history.push({ role: "assistant", content: reply });
+
+  // Also add to chat messages so the conversation is recorded
+  appendMsg("user", userText);
+  appendMsg("bot", reply, elapsed);
+
+  callAISpeak(reply, detectExpression(reply));
+  autoExtractMemory(userText);
+}
+
+function generateCallExpression(char, exprName) {
   const base = state.sdUrl.replace(/\/$/, "");
   const exprSuffix = char.expressions[exprName] || char.expressions.neutral;
   const prompt = char.portrait_prompt + exprSuffix;
-  try {
-    const resp = await fetch(base + "/api/generate/image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, steps: 20, width: 512, height: 512, persona: char.name }),
-    });
-    if (!resp.ok) return;
-    const { job_id } = await resp.json();
-    const dataUrl = await pollForResult(job_id);
-    if (dataUrl && state.callInterval) {
-      const photo = $("callPortraitPhoto");
-      if (photo) {
-        photo.src = dataUrl;
-        photo.classList.add("loaded");
-        const emoji = $("callPortraitEmoji");
-        if (emoji) emoji.classList.add("hidden");
+  fetch(base + "/api/generate/image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, steps: 20, width: 512, height: 512, persona: char.name }),
+  }).then(r => r.ok ? r.json() : null)
+    .then(d => d ? pollForResult(d.job_id) : null)
+    .then(dataUrl => {
+      if (dataUrl && state.callTimerInterval) {
+        const photo = $("callPortraitPhoto");
+        if (photo) {
+          photo.src = dataUrl; photo.classList.add("loaded");
+          const emoji = $("callPortraitEmoji");
+          if (emoji) emoji.classList.add("hidden");
+        }
       }
-    }
-  } catch {}
+    }).catch(() => {});
 }
 
 // ── Local Camera (WebRTC getUserMedia) ─────────────────────────────────────

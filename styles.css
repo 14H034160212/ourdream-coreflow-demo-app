@@ -640,12 +640,7 @@ body {
   50%       { transform: scale(1.08); opacity: 0.75; }
 }
 
-.call-caption {
-  font-size: 16px; color: #b0b0cc;
-  min-height: 24px; text-align: center;
-  transition: opacity 0.3s; max-width: 80%;
-  font-style: italic;
-}
+/* call-caption defined later with full styles */
 
 /* Waveform */
 .call-waveform { display: flex; align-items: center; gap: 5px; height: 32px; }
@@ -664,18 +659,71 @@ body {
   50%       { height: 26px; opacity: 0.9; }
 }
 
-.call-controls { display: flex; gap: 14px; }
+.call-controls { display: flex; gap: 14px; align-items: center; }
 .ctrl-btn {
   padding: 13px 24px;
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: 50px;
   background: rgba(255,255,255,0.06);
   color: white; font-size: 13px; font-weight: 500;
-  cursor: pointer; transition: background 0.15s;
+  cursor: pointer; transition: background 0.15s, border-color 0.2s, box-shadow 0.2s;
 }
 .ctrl-btn:hover { background: rgba(255,255,255,0.12); }
 .end-btn { background: rgba(220,38,38,0.6) !important; border-color: transparent !important; }
 .end-btn:hover { background: rgba(220,38,38,0.85) !important; }
+
+/* Call mic button states */
+.call-mic-btn {
+  background: rgba(168,85,247,0.15) !important;
+  border-color: rgba(168,85,247,0.4) !important;
+  color: #d8b4fe !important;
+  min-width: 100px;
+  font-weight: 600 !important;
+}
+.call-mic-btn:hover { background: rgba(168,85,247,0.25) !important; }
+.call-mic-btn.listening {
+  background: rgba(239,68,68,0.2) !important;
+  border-color: #ef4444 !important;
+  color: #fca5a5 !important;
+  box-shadow: 0 0 16px rgba(239,68,68,0.4);
+  animation: callMicPulse 1s ease-in-out infinite;
+}
+.call-mic-btn.speaking {
+  background: rgba(74,222,128,0.12) !important;
+  border-color: rgba(74,222,128,0.4) !important;
+  color: #86efac !important;
+  pointer-events: none;
+}
+@keyframes callMicPulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(239,68,68,0.35); }
+  50%       { box-shadow: 0 0 24px rgba(239,68,68,0.65); }
+}
+
+/* AI speaking caption — larger, more prominent */
+.call-caption {
+  font-size: 17px; color: #d0d0e8;
+  min-height: 28px; text-align: center;
+  transition: opacity 0.3s;
+  max-width: 88%;
+  line-height: 1.5;
+  font-style: normal;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(6px);
+  border-radius: 16px;
+  padding: 8px 18px;
+}
+
+/* Listening status indicator */
+.call-listen-indicator {
+  font-size: 12px; color: #ef4444;
+  letter-spacing: 0.5px; font-weight: 500;
+  display: flex; align-items: center; gap: 6px;
+  animation: fadeInOut 1.5s ease-in-out infinite;
+}
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 1; }
+}
 
 /* ── SETTINGS MODAL ────────────────────────────────────────────────────── */
 .modal-overlay {
