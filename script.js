@@ -571,16 +571,18 @@ function startCall() {
     }, 1000);
 
     if (state.sdEnabled) generateCallExpression(char, "happy");
+    startEyeBlink();
   }, 1000);
 }
 
 function endCall() {
   clearInterval(state.callTimerInterval);
   state.callTimerInterval = null;
-  // Stop TTS
   if (window.speechSynthesis) window.speechSynthesis.cancel();
-  // Stop STT
+  stopLipSync();
+  stopEyeBlink();
   stopCallListen();
+  $("callPortraitCircle")?.classList.remove("talking", "eye-closed");
   $("callWaveform").classList.remove("active");
   $("callSpeakRing").classList.remove("active");
   state.callSpeaking = false;
@@ -590,20 +592,104 @@ function endCall() {
   showView("chatView");
 }
 
+// ── Strip emojis & decorative characters from TTS text ────────────────────
+function stripForTTS(text) {
+  return text
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+    .replace(/[\u{2600}-\u{27BF}]/gu, "")
+    .replace(/[\u{FE00}-\u{FEFF}]/gu, "")
+    .replace(/[✦★☆♪♫♬·•~〜]/g, "")
+    .replace(/[～〰]+/g, "，")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+// ── Detect primary language for TTS lang tag ──────────────────────────────
+function detectLang(text) {
+  const cjk = (text.match(/[\u4e00-\u9fff\u3040-\u30ff]/g) || []).length;
+  return cjk / Math.max(text.length, 1) > 0.15 ? "zh-CN" : "en-US";
+}
+
 // ── TTS voice selection ────────────────────────────────────────────────────
 function selectTTSVoice() {
   if (!window.speechSynthesis) return;
   const load = () => {
     const voices = window.speechSynthesis.getVoices();
-    // Prefer Chinese female voice
-    const preferred = voices.find(v => v.lang.startsWith("zh") && /female|woman|girl|Ting-Ting|Sinji|Meijia|Yaoyao|Huihui|Li|Na/i.test(v.name))
-      || voices.find(v => v.lang.startsWith("zh"))
-      || voices.find(v => v.lang.startsWith("en") && /female/i.test(v.name))
-      || voices[0] || null;
-    state.ttsVoice = preferred;
+    if (!voices.length) return;
+    // Priority: neural Chinese female → cloud Chinese → any Chinese → English female → first
+    const checks = [
+      v => /zh/i.test(v.lang) && /Tingting|Sinji|Meijia|Hanhan|Yaoyao|Huihui|Ting-Ting|Google 普通话|Google 國語/i.test(v.name),
+      v => /zh/i.test(v.lang) && v.localService === false,
+      v => /zh-CN/i.test(v.lang),
+      v => /zh/i.test(v.lang),
+      v => /en/i.test(v.lang) && /samantha|karen|moira|fiona|zira|hazel|female/i.test(v.name),
+      () => voices[0],
+    ];
+    for (const check of checks) {
+      const v = voices.find(check);
+      if (v) { state.ttsVoice = v; return; }
+    }
   };
   if (window.speechSynthesis.getVoices().length) load();
   else window.speechSynthesis.addEventListener("voiceschanged", load, { once: true });
+}
+
+// ── RAF-based lip-sync simulation ─────────────────────────────────────────
+let _lipSyncRaf = null;
+
+function startLipSync() {
+  _lipSyncRaf && cancelAnimationFrame(_lipSyncRaf);
+  const t0 = Date.now();
+  function tick() {
+    const mouth = $("callMouth");
+    if (!mouth || !state.callSpeaking) {
+      if (mouth) { mouth.style.height = "3px"; mouth.style.width = "30px"; mouth.style.borderRadius = "50%"; }
+      _lipSyncRaf = null; return;
+    }
+    const t = Date.now() - t0;
+    // Multi-frequency oscillation mimics natural speech amplitude
+    const raw =
+      Math.abs(Math.sin(t * 0.0085)) * 0.42 +
+      Math.abs(Math.sin(t * 0.0233 + 1.1)) * 0.34 +
+      Math.abs(Math.sin(t * 0.0511 + 0.7)) * 0.24;
+    const amp = raw * (0.65 + Math.random() * 0.35);
+    const h = Math.round(3 + amp * 15);   // 3–18 px
+    const w = Math.round(28 + amp * 12);  // 28–40 px
+    mouth.style.height = h + "px";
+    mouth.style.width  = w + "px";
+    mouth.style.borderRadius = h > 8
+      ? "40% 40% 50% 50% / 30% 30% 60% 60%"
+      : "50%";
+    _lipSyncRaf = requestAnimationFrame(tick);
+  }
+  _lipSyncRaf = requestAnimationFrame(tick);
+}
+
+function stopLipSync() {
+  _lipSyncRaf && cancelAnimationFrame(_lipSyncRaf);
+  _lipSyncRaf = null;
+  const mouth = $("callMouth");
+  if (mouth) { mouth.style.height = "3px"; mouth.style.width = "30px"; mouth.style.borderRadius = "50%"; }
+}
+
+// ── Eye blink ─────────────────────────────────────────────────────────────
+let _eyeBlinkTimer = null;
+
+function startEyeBlink() {
+  stopEyeBlink();
+  const doBlink = () => {
+    const circle = $("callPortraitCircle");
+    if (!circle || !state.callTimerInterval) return;
+    circle.classList.add("eye-closed");
+    setTimeout(() => circle.classList.remove("eye-closed"), 110);
+    _eyeBlinkTimer = setTimeout(doBlink, 2200 + Math.random() * 3800);
+  };
+  _eyeBlinkTimer = setTimeout(doBlink, 800 + Math.random() * 1500);
+}
+
+function stopEyeBlink() {
+  clearTimeout(_eyeBlinkTimer); _eyeBlinkTimer = null;
+  $("callPortraitCircle")?.classList.remove("eye-closed");
 }
 
 // ── AI speaks during call ─────────────────────────────────────────────────
@@ -615,40 +701,42 @@ function callAISpeak(text, expr) {
   setExpression(expr || detectExpression(text));
   $("callWaveform").classList.add("active");
   $("callSpeakRing").classList.add("active");
+  $("callPortraitCircle")?.classList.add("talking");
+
+  // Show caption (original text with emojis)
   typeCaption(text);
 
-  if (!window.speechSynthesis) {
-    state.callSpeaking = false;
-    onAISpeakEnd();
+  // Start visual animations
+  startLipSync();
+
+  // TTS: strip emojis, detect language
+  const spoken = stripForTTS(text);
+  const lang   = detectLang(spoken);
+
+  if (!window.speechSynthesis || !spoken) {
+    setTimeout(() => { state.callSpeaking = false; onAISpeakEnd(); }, 1800);
     return;
   }
 
   window.speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.lang = "zh-CN";
-  utt.rate = 0.95;
-  utt.pitch = 1.1;
+  const utt = new SpeechSynthesisUtterance(spoken);
+  utt.lang   = lang;
+  utt.rate   = lang.startsWith("zh") ? 0.88 : 0.92;  // slightly slower = more natural
+  utt.pitch  = 1.08;
+  utt.volume = 1.0;
   if (state.ttsVoice) utt.voice = state.ttsVoice;
 
-  utt.onend = () => {
-    state.callSpeaking = false;
-    onAISpeakEnd();
-  };
-  utt.onerror = () => {
-    state.callSpeaking = false;
-    onAISpeakEnd();
-  };
-
+  const done = () => { state.callSpeaking = false; stopLipSync(); onAISpeakEnd(); };
+  utt.onend   = done;
+  utt.onerror = done;
   window.speechSynthesis.speak(utt);
 }
 
 function onAISpeakEnd() {
-  if (!state.callTimerInterval) return; // call already ended
+  if (!state.callTimerInterval) return;
+  $("callPortraitCircle")?.classList.remove("talking");
   const micBtn = $("callMicBtn");
-  if (micBtn) {
-    micBtn.textContent = "🎙 说话";
-    micBtn.className = "ctrl-btn call-mic-btn";
-  }
+  if (micBtn) { micBtn.textContent = "🎙 说话"; micBtn.className = "ctrl-btn call-mic-btn"; }
   setExpression("neutral");
 }
 
@@ -659,10 +747,12 @@ function typeCaption(text) {
   el.style.opacity = "1";
   el.textContent = "";
   let i = 0;
+  // Faster per-char for short text, slower for long — feels more natural
+  const delay = Math.max(18, Math.min(40, 1400 / text.length));
   const tick = setInterval(() => {
     el.textContent = text.slice(0, ++i);
     if (i >= text.length) clearInterval(tick);
-  }, 50);
+  }, delay);
 }
 
 function setCallCaption(text) {

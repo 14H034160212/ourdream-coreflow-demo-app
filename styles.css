@@ -640,6 +640,49 @@ body {
   50%       { transform: scale(1.08); opacity: 0.75; }
 }
 
+/* Lip-sync mouth — driven by rAF amplitude simulation */
+.call-mouth {
+  position: absolute;
+  bottom: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 3px;
+  background: linear-gradient(to bottom, rgba(90,20,20,0.55), rgba(60,10,10,0.35));
+  border-radius: 50%;
+  z-index: 6;
+  pointer-events: none;
+  will-change: height, width;
+}
+
+/* Eye blink — ::after overlay at eye-row height */
+.call-portrait-circle::after {
+  content: "";
+  position: absolute;
+  top: 35%; left: 0; right: 0;
+  height: 0; opacity: 0;
+  background: rgba(0,0,0,0.45);
+  pointer-events: none;
+  z-index: 5;
+  transition: height 0.07s ease-in, opacity 0.07s;
+  border-radius: 3px;
+}
+.call-portrait-circle.eye-closed::after {
+  height: 14px;
+  opacity: 1;
+}
+
+/* Talking head bob — overrides expression idle animation while speaking */
+@keyframes talkBob {
+  0%, 100% { transform: scale(1)     translateY(0)    rotate(0deg); }
+  25%       { transform: scale(1.015) translateY(-2px) rotate(-0.4deg); }
+  60%       { transform: scale(0.992) translateY(1px)  rotate(0.25deg); }
+}
+.call-portrait-circle.talking {
+  animation: talkBob 0.42s ease-in-out infinite !important;
+  filter: brightness(1.05) saturate(1.1) !important;
+}
+
 /* call-caption defined later with full styles */
 
 /* Waveform */
