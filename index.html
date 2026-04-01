@@ -1,320 +1,196 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Companion OS Demo</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OurDream · AI Companion</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="logo">◎</div>
-        <div>
-          <h1>Companion OS</h1>
-          <p>Coreflow-style demo for AI companion infra</p>
-        </div>
-      </div>
 
-      <section class="panel">
-        <h2>Character</h2>
-        <label class="label">Persona</label>
-        <select id="personaSelect">
-          <option value="Neon Dreamer">Neon Dreamer</option>
-          <option value="Calm Architect">Calm Architect</option>
-          <option value="Moonlit Traveler">Moonlit Traveler</option>
-        </select>
+  <!-- ── HOME VIEW ─────────────────────────────────────────────────────────── -->
+  <div id="homeView" class="view">
+    <header class="home-header">
+      <div class="home-logo">✦ OurDream</div>
+      <button class="icon-btn" id="settingsBtn" title="设置">⚙</button>
+    </header>
 
-        <label class="label">Tone</label>
-        <select id="toneSelect">
-          <option value="warm">warm</option>
-          <option value="playful">playful</option>
-          <option value="intimate">intimate</option>
-          <option value="mysterious">mysterious</option>
-        </select>
+    <div class="home-hero">
+      <div class="home-hero-title">遇见你的专属伴侣</div>
+      <div class="home-hero-sub">AI 驱动 · 实时对话 · 情感陪伴</div>
+    </div>
 
-        <div class="kpi-grid">
-          <div class="kpi">
-            <span>Realtime path</span>
-            <strong id="realtimeStatus">healthy</strong>
-          </div>
-          <div class="kpi">
-            <span>Media queue</span>
-            <strong id="queueStatus">idle</strong>
-          </div>
-          <div class="kpi">
-            <span>Messages</span>
-            <strong id="msgCount">0</strong>
-          </div>
-          <div class="kpi">
-            <span>Session</span>
-            <strong id="sessionTimer">00:00</strong>
-          </div>
-        </div>
-      </section>
+    <div class="home-filters">
+      <button class="filter-chip active">✦ 全部</button>
+      <button class="filter-chip">🌸 温柔系</button>
+      <button class="filter-chip">⚡ 活力系</button>
+      <button class="filter-chip">🌊 知性系</button>
+      <button class="filter-chip">🌹 神秘系</button>
+    </div>
 
-      <section class="panel">
-        <div class="section-head">
-          <h2>Pinned Memory</h2>
-          <button id="addMemoryBtn" class="ghost-btn">Add</button>
-        </div>
-        <div id="memorySearch" class="memory-search-wrap">
-          <input id="memorySearchInput" type="text" placeholder="Search memory…" />
-        </div>
-        <div id="memoryList" class="memory-list"></div>
-      </section>
+    <div class="girl-grid" id="girlGrid"><!-- JS generated --></div>
 
-      <section class="panel">
-        <div class="section-head">
-          <h2>Media Jobs</h2>
-          <button id="clearJobsBtn" class="ghost-btn">Clear</button>
-        </div>
-        <div id="jobList" class="job-list"></div>
-      </section>
-
-      <section class="panel">
-        <div class="section-head">
-          <h2>AI Backend</h2>
-          <span id="vllmDot" class="status-dot dot-unknown" title="Connection status"></span>
-        </div>
-        <label class="label">vLLM endpoint</label>
-        <input id="vllmUrl" type="text" value="http://localhost:8000" placeholder="http://localhost:8000" />
-        <label class="label">Model</label>
-        <input id="vllmModel" type="text" value="" placeholder="e.g. Qwen/Qwen2.5-7B-Instruct" />
-        <div class="vllm-row">
-          <button id="vllmTestBtn" class="ghost-btn">Test connection</button>
-          <button id="vllmToggleBtn" class="action-btn vllm-off-btn">AI Off</button>
-        </div>
-        <p id="vllmHint" class="hint vllm-hint">AI is off — using simulation.</p>
-
-        <div class="panel-divider"></div>
-
-        <div class="sub-section-head">
-          <span class="sub-section-title">Image Generation (Diffusion)</span>
-          <span id="imgDot" class="status-dot dot-unknown" title="Image backend status"></span>
-        </div>
-        <label class="label">Backend URL</label>
-        <input id="imgBackendUrl" type="text" value="http://localhost:8100" placeholder="http://localhost:8100" />
-        <label class="label">SD model</label>
-        <input id="sdModel" type="text" value="runwayml/stable-diffusion-v1-5"
-               list="sdModelList" placeholder="HuggingFace model ID" />
-        <datalist id="sdModelList">
-          <option value="runwayml/stable-diffusion-v1-5">SD 1.5 — General (4 GB VRAM)</option>
-          <option value="SG161222/Realistic_Vision_V6.0_B1_noVAE">Realistic Vision 6 — Portrait (4 GB)</option>
-          <option value="Lykon/dreamshaper-8">DreamShaper 8 — Semi-realistic (4 GB)</option>
-          <option value="stabilityai/stable-diffusion-xl-base-1.0">SDXL Base — High quality (8 GB)</option>
-        </datalist>
-        <div class="vllm-row">
-          <button id="imgTestBtn" class="ghost-btn">Test</button>
-          <button id="imgToggleBtn" class="action-btn img-off-btn">Images Off</button>
-        </div>
-        <p id="imgHint" class="hint vllm-hint">Images off — using gradient placeholders.</p>
-      </section>
-    </aside>
-
-    <main class="main">
-      <header class="topbar">
-        <div>
-          <h2>Realtime Companion Chat</h2>
-          <p>Fast chat path + transparent async media orchestration</p>
-        </div>
-        <div class="action-row">
-          <button id="voiceBtn" class="action-btn">🎙 Start Voice</button>
-          <button id="speakBtn" class="action-btn secondary">🔊 Voice Reply On</button>
-          <button id="videoCallBtn" class="action-btn call-btn">📹 Start Call</button>
-        </div>
-      </header>
-
-      <section class="metrics">
-        <div class="metric-card">
-          <span>First reply latency</span>
-          <strong id="replyLatency">—</strong>
-        </div>
-        <div class="metric-card">
-          <span>Voice round-trip</span>
-          <strong id="voiceLatency">—</strong>
-        </div>
-        <div class="metric-card">
-          <span>Credits used</span>
-          <strong id="creditsUsed">0</strong>
-        </div>
-        <div class="metric-card">
-          <span>GPU lanes</span>
-          <strong>0-1 realtime / 2-5 image / 6-7 video</strong>
-        </div>
-      </section>
-
-      <!-- Latency breakdown panel (hidden until first reply) -->
-      <section id="latencyBreakdown" class="latency-breakdown hidden">
-        <div class="lb-title">Latency Budget Breakdown</div>
-        <div class="lb-bars">
-          <div class="lb-row">
-            <span class="lb-label">Capture + encode</span>
-            <div class="lb-bar-wrap"><div id="lbCapture" class="lb-bar capture"></div></div>
-            <span id="lbCaptureMs" class="lb-ms">—</span>
-          </div>
-          <div class="lb-row">
-            <span class="lb-label">Transport</span>
-            <div class="lb-bar-wrap"><div id="lbTransport" class="lb-bar transport"></div></div>
-            <span id="lbTransportMs" class="lb-ms">—</span>
-          </div>
-          <div class="lb-row">
-            <span class="lb-label">Agent logic</span>
-            <div class="lb-bar-wrap"><div id="lbAgent" class="lb-bar agent"></div></div>
-            <span id="lbAgentMs" class="lb-ms">—</span>
-          </div>
-          <div class="lb-row">
-            <span class="lb-label">TTS / dispatch</span>
-            <div class="lb-bar-wrap"><div id="lbTts" class="lb-bar tts"></div></div>
-            <span id="lbTtsMs" class="lb-ms">—</span>
-          </div>
-        </div>
-        <div class="lb-total">Total fast-path target: <strong id="lbTotal">—</strong> <span class="lb-target">(target &lt;200ms)</span></div>
-      </section>
-
-      <!-- Architecture pipeline strip -->
-      <section class="arch-strip" id="archStrip">
-        <div class="arch-header" id="archToggle">
-          <span class="arch-title">Architecture: How the Fast Path Works</span>
-          <span class="arch-chevron" id="archChevron">▼</span>
-        </div>
-        <div class="arch-body" id="archBody">
-          <div class="arch-steps">
-            <div class="arch-step">
-              <div class="arch-icon">🎙</div>
-              <div class="arch-step-label">1. Capture</div>
-              <div class="arch-step-sub">Browser mic/cam → encode</div>
-            </div>
-            <div class="arch-arrow">→</div>
-            <div class="arch-step">
-              <div class="arch-icon">📡</div>
-              <div class="arch-step-label">2. Transport</div>
-              <div class="arch-step-sub">WebRTC / low-latency relay</div>
-            </div>
-            <div class="arch-arrow">→</div>
-            <div class="arch-step highlight-step">
-              <div class="arch-icon">⚡</div>
-              <div class="arch-step-label">3. Fast Path</div>
-              <div class="arch-step-sub">Text · voice reply<br>GPU lanes 0-1</div>
-            </div>
-            <div class="arch-arrow fork-arrow">→</div>
-            <div class="arch-fork">
-              <div class="arch-step fork-top">
-                <div class="arch-icon">🖼</div>
-                <div class="arch-step-label">4a. Image Queue</div>
-                <div class="arch-step-sub">Async · GPU 2-5</div>
-              </div>
-              <div class="arch-step fork-bottom">
-                <div class="arch-icon">🎬</div>
-                <div class="arch-step-label">4b. Video Queue</div>
-                <div class="arch-step-sub">Async · GPU 6-7</div>
-              </div>
-            </div>
-            <div class="arch-arrow">→</div>
-            <div class="arch-step">
-              <div class="arch-icon">📊</div>
-              <div class="arch-step-label">5. Observability</div>
-              <div class="arch-step-sub">Latency · credits · queue depth</div>
-            </div>
-          </div>
-          <p class="arch-note">The fast path (steps 1-3) targets &lt;200ms overhead. Heavy media tasks route to async queues so conversation is never blocked.</p>
-        </div>
-      </section>
-
-      <section id="chatLog" class="chat-log">
-        <!-- typing indicator injected here by JS -->
-      </section>
-
-      <form id="composer" class="composer">
-        <textarea id="messageInput" placeholder="Talk to your companion or ask for a selfie / video…" rows="3"></textarea>
-        <div class="quick-chips" id="quickChips">
-          <button type="button" class="chip" data-prompt="Tell me something about yourself.">Introduce yourself</button>
-          <button type="button" class="chip" data-prompt="Take a selfie for me.">📸 Selfie</button>
-          <button type="button" class="chip" data-prompt="Send me a short video of you dancing.">🎬 Video clip</button>
-          <button type="button" class="chip" data-prompt="Remember that I love stargazing.">📌 Pin memory</button>
-        </div>
-        <div class="composer-actions">
-          <span class="hint">Tip: ask for an image or video to see async job routing.</span>
-          <button type="submit" class="send-btn">Send</button>
-        </div>
-      </form>
-    </main>
+    <div class="gen-notice hidden" id="genNotice">
+      <span class="gen-dot"></span> 正在为你生成专属人像…
+    </div>
   </div>
 
-  <!-- Video call overlay -->
-  <div id="videoCallOverlay" class="video-call-overlay hidden">
-    <div class="vc-panel">
-      <div class="vc-header">
-        <span class="vc-title">Live Call — <span id="vcPersonaName">Neon Dreamer</span></span>
-        <div class="vc-badges">
-          <span class="badge ok" id="vcStatus">Connecting…</span>
-          <span class="badge accent" id="vcLatencyBadge">— ms</span>
+  <!-- ── CHAT VIEW ──────────────────────────────────────────────────────────── -->
+  <div id="chatView" class="view hidden">
+    <div class="chat-header">
+      <button class="icon-btn" id="backBtn">←</button>
+
+      <div class="hd-portrait-outer" id="chatExprWrap">
+        <div class="hd-portrait-circle" id="chatPortraitCircle">
+          <span class="p-emoji" id="chatPortraitEmoji"></span>
+          <img  class="p-photo" id="chatPortraitPhoto" alt="">
         </div>
+        <div class="expr-badge" id="chatExprBadge">😊</div>
       </div>
-      <div class="vc-main">
-        <div class="vc-remote">
-          <div class="vc-avatar" id="vcAvatar">
-            <div class="vc-avatar-ring"></div>
-            <div class="vc-avatar-inner" id="vcAvatarInner">◎</div>
-          </div>
-          <div class="vc-waveform" id="vcWaveform">
-            <span></span><span></span><span></span><span></span><span></span>
-            <span></span><span></span><span></span><span></span><span></span>
-          </div>
-          <div class="vc-caption" id="vcCaption"></div>
-        </div>
-        <div class="vc-local">
-          <div class="vc-local-label">You (mic)</div>
-          <div class="vc-local-waveform" id="vcLocalWaveform">
-            <span></span><span></span><span></span><span></span><span></span>
-          </div>
-        </div>
+
+      <div class="chat-header-info">
+        <div class="chat-name" id="chatName"></div>
+        <div class="chat-online">在线</div>
       </div>
-      <div class="vc-metrics-row">
-        <div class="vc-metric">
-          <span>Transport</span>
-          <strong id="vcTransport">—</strong>
-        </div>
-        <div class="vc-metric">
-          <span>Agent loop</span>
-          <strong id="vcAgentLoop">—</strong>
-        </div>
-        <div class="vc-metric">
-          <span>TTS start</span>
-          <strong id="vcTtsStart">—</strong>
-        </div>
-        <div class="vc-metric">
-          <span>Round-trip</span>
-          <strong id="vcRoundTrip">—</strong>
-        </div>
+
+      <div class="chat-header-actions">
+        <button class="icon-btn pos-rel" id="memoryBtn" title="记忆">🧠</button>
+        <button class="icon-btn pos-rel" id="queueBtn" title="生成队列">
+          ⚡<span id="queueBadge" class="queue-badge hidden">0</span>
+        </button>
+        <button class="call-start-btn" id="callBtn">📹 视频</button>
       </div>
-      <div class="vc-controls">
-        <button id="vcMuteBtn" class="vc-ctrl-btn">🎙 Mute</button>
-        <button id="vcEndBtn" class="vc-ctrl-btn danger">📵 End Call</button>
-        <button id="vcCaptureBtn" class="vc-ctrl-btn">📸 Capture</button>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="day-divider">今天</div>
+    </div>
+
+    <div class="chat-composer">
+      <button class="mic-btn" id="micBtn" title="语音输入">🎙</button>
+      <input id="msgInput" type="text" placeholder="说点什么…" autocomplete="off">
+      <button class="icon-btn compose-img-btn" id="genImgBtn" title="生成表情图片">📸</button>
+      <button id="sendBtn">发送</button>
+    </div>
+  </div>
+
+  <!-- ── VIDEO CALL VIEW ────────────────────────────────────────────────────── -->
+  <div id="callView" class="view hidden">
+    <div class="call-bg" id="callBg"></div>
+
+    <video id="localVideo" class="local-video hidden" autoplay muted playsinline></video>
+
+    <div class="call-metrics" id="callMetrics">
+      <span class="metric-chip" id="metricConnect">⚡ —ms</span>
+      <span class="metric-chip" id="metricReply">💬 —ms</span>
+    </div>
+
+    <div class="call-overlay">
+      <div class="call-top-row">
+        <div>
+          <div class="call-char-name" id="callCharName"></div>
+          <div class="call-status-badge" id="callStatusBadge">连接中…</div>
+        </div>
+        <div class="call-timer" id="callTimer">00:00</div>
       </div>
-      <div class="vc-transcript-wrap">
-        <div class="vc-transcript-label">Live Transcript</div>
-        <div id="vcTranscriptLog" class="vc-transcript-log"></div>
+
+      <div class="call-portrait-outer" id="callExprWrap">
+        <div class="call-portrait-circle" id="callPortraitCircle">
+          <span class="p-emoji" id="callPortraitEmoji"></span>
+          <img  class="p-photo" id="callPortraitPhoto" alt="">
+        </div>
+        <div class="call-speak-ring" id="callSpeakRing"></div>
+        <div class="expr-badge large" id="callExprBadge">😊</div>
+      </div>
+
+      <div class="call-caption" id="callCaption"></div>
+
+      <div class="call-waveform" id="callWaveform">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="call-controls">
+        <button class="ctrl-btn" id="muteBtn">🎙 静音</button>
+        <button class="ctrl-btn end-btn" id="endCallBtn">结束通话</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast container -->
-  <div id="toastContainer" class="toast-container"></div>
-
-  <dialog id="memoryDialog">
-    <form method="dialog" class="dialog-form">
-      <h3>Add memory</h3>
-      <textarea id="memoryInput" rows="4" placeholder="e.g. User likes rainy cyberpunk cafes."></textarea>
-      <div class="dialog-actions">
-        <button value="cancel" class="ghost-btn">Cancel</button>
-        <button id="saveMemoryBtn" value="default" class="send-btn">Save</button>
+  <!-- ── SETTINGS MODAL ─────────────────────────────────────────────────────── -->
+  <div id="settingsModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <span>⚙ AI 后端设置</span>
+        <button class="icon-btn" id="closeSettingsBtn">✕</button>
       </div>
-    </form>
-  </dialog>
 
-  <script src="./script.js"></script>
+      <div class="setting-section">
+        <div class="setting-label">💬 对话 AI（vLLM / OpenAI 兼容）</div>
+        <input class="setting-input" id="vllmUrl"   type="text" value="http://localhost:8000" placeholder="http://localhost:8000">
+        <input class="setting-input" id="vllmModel" type="text" placeholder="模型名称（留空自动检测）">
+        <div class="setting-row">
+          <button class="test-btn"   id="vllmTestBtn">测试连接</button>
+          <button class="toggle-btn off" id="vllmToggle">AI 已关闭</button>
+        </div>
+        <div class="setting-hint" id="vllmHint"></div>
+      </div>
+
+      <div class="setting-section">
+        <div class="setting-label">🖼 人像生成（Stable Diffusion 后端）</div>
+        <input class="setting-input" id="sdUrl" type="text" value="http://localhost:8100" placeholder="http://localhost:8100">
+        <div class="setting-row">
+          <button class="test-btn"  id="sdTestBtn">测试连接</button>
+          <button class="toggle-btn off" id="sdToggle">图像已关闭</button>
+        </div>
+        <div class="setting-hint" id="sdHint">开启后将自动生成每位伴侣的真实人像</div>
+      </div>
+
+      <button class="danger-btn" id="clearCacheBtn">🗑 清除已缓存的人像</button>
+    </div>
+  </div>
+
+  <!-- ── MEMORY DRAWER ──────────────────────────────────────────────────────── -->
+  <div id="memoryDrawer" class="drawer hidden">
+    <div class="drawer-backdrop" id="memoryBackdrop"></div>
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <span>🧠 记忆</span>
+        <button class="icon-btn" id="closeMemoryBtn">✕</button>
+      </div>
+      <div class="drawer-body">
+        <button class="add-item-btn" id="addMemoryBtn">+ 添加记忆</button>
+        <div id="memoryAddForm" class="memory-add-form hidden">
+          <textarea id="memoryInput" placeholder="记录重要的事…" rows="3"></textarea>
+          <div class="memory-form-row">
+            <label class="pin-label">
+              <input type="checkbox" id="memoryPinCheck"> 📌 置顶
+            </label>
+            <button id="saveMemoryBtn" class="save-mem-btn">保存</button>
+          </div>
+        </div>
+        <div id="memoryList" class="memory-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── QUEUE DRAWER ────────────────────────────────────────────────────────── -->
+  <div id="queueDrawer" class="drawer hidden">
+    <div class="drawer-backdrop" id="queueBackdrop"></div>
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <span>⚡ 生成队列</span>
+        <button class="icon-btn" id="closeQueueBtn">✕</button>
+      </div>
+      <div class="drawer-body">
+        <div id="queueEmpty" class="queue-empty">
+          暂无生成任务<br><small>点击 📸 按钮生成角色表情图片</small>
+        </div>
+        <div id="queueList" class="queue-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

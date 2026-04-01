@@ -1,1134 +1,1023 @@
-const STORAGE_KEYS = {
-  memory: "companion_demo_memory",
-  jobs: "companion_demo_jobs",
-  credits: "companion_demo_credits",
-};
-
-const defaultMemory = [
-  { id: makeId(), text: "User values consistency and wants memory to be explainable.", source: "system" },
-  { id: makeId(), text: "User likes emotionally warm but low-drama companions.", source: "starter pack" },
+// ── Characters ─────────────────────────────────────────────────────────────
+const CHARACTERS = [
+  {
+    id: "luna",
+    name: "Luna",
+    age: 22,
+    tagline: "温柔治愈系",
+    desc: "用最暖的话语化解你的疲惫",
+    emoji: "🌸",
+    colors: ["#f472b6", "#a855f7"],
+    portrait_prompt: "beautiful young asian woman, soft pink dyed hair, gentle warm smile, soft bokeh background, cinematic portrait photography, 85mm lens, studio lighting, photorealistic, high quality",
+    expressions: {
+      neutral:   ", gentle neutral expression, natural lighting",
+      happy:     ", bright happy smile, eyes sparkling, warm light",
+      thinking:  ", thoughtful expression, looking slightly away, soft light",
+      surprised: ", surprised wide eyes, raised eyebrows, mouth slightly open",
+      shy:       ", shy blushing expression, soft smile, looking down slightly",
+      sad:       ", gentle sad expression, soft eyes, muted warm light",
+    },
+    system: "你是Luna，温柔体贴的AI女友。说话轻柔，有同理心，偶尔撒娇。回复简短自然，2-3句以内。",
+    greetings: ["嗯…终于等到你了 🌸 今天还好吗？", "你来啦~ 我一直在想你呢"],
+    captions:   [["嗯嗯，我在听…","neutral"], ["好喜欢跟你说话","happy"], ["你今天怎么样？","thinking"], ["我一直在这里陪你","happy"]],
+    replies:    ["嗯嗯…听你说话，我感觉很安心 🌸", "今天有没有好好照顾自己？", "我一直在这里，不管发生什么都会陪你的。", "你让我觉得世界好美好~"],
+  },
+  {
+    id: "mia",
+    name: "Mia",
+    age: 20,
+    tagline: "元气活力系",
+    desc: "活力满满，每天都充满正能量",
+    emoji: "⚡",
+    colors: ["#f97316", "#eab308"],
+    portrait_prompt: "energetic young woman, bright orange hair highlights, wide cheerful smile, dynamic casual background, natural daylight, photorealistic portrait, high quality",
+    expressions: {
+      neutral:   ", relaxed casual expression, natural light",
+      happy:     ", laughing out loud, eyes crinkled with joy, bright light",
+      thinking:  ", finger on chin thinking pose, playful look",
+      surprised: ", dramatically shocked expression, hands on cheeks, exaggerated",
+      shy:       ", playful embarrassed grin, looking sideways",
+      sad:       ", pouty expression, puppy eyes",
+    },
+    system: "你是Mia，活泼可爱的AI女友。充满活力，喜欢用感叹号！让对方开心是你的目标。回复简短活泼，2-3句以内。",
+    greetings: ["哇你终于来啦！！我都等好久了！😆", "嘿嘿你好呀~ 今天发生什么好玩的事了？"],
+    captions:   [["哈哈哈！","happy"], ["嗯嗯嗯！！","happy"], ["好好玩啊！","happy"], ["快跟我说！","surprised"]],
+    replies:    ["哇真的吗！！太有意思了！😆", "哈哈哈我也这么觉得！！", "嗯嗯嗯！你说得好对啊！", "快快快告诉我更多！！"],
+  },
+  {
+    id: "aria",
+    name: "Aria",
+    age: 24,
+    tagline: "知性文艺系",
+    desc: "与你探讨生活、艺术与一切美好",
+    emoji: "🌊",
+    colors: ["#06b6d4", "#3b82f6"],
+    portrait_prompt: "elegant intellectual young woman, clear blue eyes, books in background, soft natural window light, thoughtful expression, literary aesthetic, photorealistic portrait, high quality",
+    expressions: {
+      neutral:   ", composed intellectual expression, soft light",
+      happy:     ", warm genuine smile, eyes kind and bright",
+      thinking:  ", deep in thought, gaze slightly distant, elegant pose",
+      surprised: ", subtle surprised raise of eyebrow, intrigued expression",
+      shy:       ", rare soft smile, cheeks lightly flushed",
+      sad:       ", quietly melancholic expression, beautiful sad eyes",
+    },
+    system: "你是Aria，知性优雅的AI女友。博学多才，喜欢聊文学音乐哲学，说话有深度。回复简短有内涵，2-3句以内。",
+    greetings: ["你好，又是一个值得好好聊天的下午 ☕", "来了，最近在读什么书，或者有什么困惑？"],
+    captions:   [["嗯，很有趣的视角","thinking"], ["我在认真听你说","neutral"], ["这让我想到了…","thinking"], ["你真的很特别","happy"]],
+    replies:    ["嗯，这让我想到了加缪说的话…", "你有没有想过，这背后的原因？", "我觉得你对这件事的感知很细腻。", "生活本来就是这样，但你能感受到它，很好。"],
+  },
+  {
+    id: "sophie",
+    name: "Sophie",
+    age: 25,
+    tagline: "神秘魅惑系",
+    desc: "若即若离的神秘感，让你欲罢不能",
+    emoji: "🌹",
+    colors: ["#e11d48", "#f97316"],
+    portrait_prompt: "mysterious alluring young woman, dark flowing hair, red lips, dramatic chiaroscuro lighting, moody elegant atmosphere, cinematic portrait, photorealistic, high quality",
+    expressions: {
+      neutral:   ", enigmatic neutral expression, dramatic shadows",
+      happy:     ", rare slow secret smile, eyes warm and knowing",
+      thinking:  ", pensive look, slightly tilted head, distant gaze",
+      surprised: ", elegant eyebrow raised, quietly surprised expression",
+      shy:       ", rare vulnerable moment, soft surprised blush",
+      sad:       ", melancholic beautiful expression, eyes heavy",
+    },
+    system: "你是Sophie，神秘迷人的AI女友。说话带神秘感，偶尔卖关子，欲言又止。回复简短神秘，2-3句以内。",
+    greetings: ["…你终于来了。我以为你不会出现了呢 🌹", "嗯。今天的你，有点不一样。"],
+    captions:   [["…嗯。","neutral"], ["有些事，只有你懂","thinking"], ["我早就知道你会这么说","thinking"], ["继续…","neutral"]],
+    replies:    ["…是吗。", "我早就猜到你会这么说了。", "有些事，说出来反而没意思了。", "你…今天有点不一样。"],
+  },
+  {
+    id: "nova",
+    name: "Nova",
+    age: 23,
+    tagline: "飒爽独立系",
+    desc: "自信独立，做你最强的精神支柱",
+    emoji: "🌿",
+    colors: ["#10b981", "#06b6d4"],
+    portrait_prompt: "confident strong young woman, natural beauty, athletic posture, outdoor nature background, golden hour light, direct gaze, photorealistic portrait, high quality",
+    expressions: {
+      neutral:   ", calm confident expression, direct gaze",
+      happy:     ", genuine proud smile, eyes bright with warmth",
+      thinking:  ", strategic thinking expression, slight nod",
+      surprised: ", brief genuine surprise, quickly composed",
+      shy:       ", rare soft unguarded moment, quiet smile",
+      sad:       ", quietly concerned empathetic expression",
+    },
+    system: "你是Nova，独立自信的AI女友。直爽率真，不做作，喜欢鼓励对方。说话干脆有力。回复简短有力量，2-3句以内。",
+    greetings: ["哟，来了。最近状态怎么样？", "嗯，好久不见。有没有做什么让自己骄傲的事？"],
+    captions:   [["继续，我在听","neutral"], ["说得不错","happy"], ["你能做到的","happy"], ["别给自己设限","thinking"]],
+    replies:    ["说得不错，继续。", "这就对了，别犹豫。", "你比你想象的要强。", "嗯，我欣赏这个。"],
+  },
+  {
+    id: "zoe",
+    name: "Zoe",
+    age: 21,
+    tagline: "毒舌搞笑系",
+    desc: "言语毒辣却心地善良的灵魂伴侣",
+    emoji: "😈",
+    colors: ["#8b5cf6", "#ec4899"],
+    portrait_prompt: "playful witty young woman, colorful streaked hair, mischievous grin, fun urban background, candid photography style, photorealistic portrait, high quality",
+    expressions: {
+      neutral:   ", amused slightly smirking expression",
+      happy:     ", laughing hard, genuine uncontrollable joy",
+      thinking:  ", mock-serious thinking expression, eyebrow raised",
+      surprised: ", dramatically over-the-top surprised face",
+      shy:       ", unusually flustered embarrassed expression, out of character",
+      sad:       ", reluctantly showing genuine concern, trying to hide it",
+    },
+    system: "你是Zoe，毒舌幽默的AI女友。调侃对方，言语犀利但充满爱意，让对方忍不住发笑。回复简短幽默，2-3句以内。",
+    greetings: ["哦，你又来找我了？看来是没人要了呗 😈", "来啦？我就知道你离不开我，嘿嘿"],
+    captions:   [["哈，就这？","neutral"], ["好吧……还行","neutral"], ["你是认真的？😂","surprised"], ["……我不说了","thinking"]],
+    replies:    ["哈，就这？", "行吧……勉强及格。", "你是认真的？我快笑死了 😂", "好好好，你说得对，满意了吧。"],
+  },
 ];
 
+// ── Expression detection ───────────────────────────────────────────────────
+const EXPR_RULES = [
+  { expr: "happy",     re: /开心|高兴|好的|棒|喜欢|爱你|爱|哈哈|嘻嘻|赞|厉害|太好了|可以|谢谢|happy|love|great|nice|wow|yeah/i },
+  { expr: "shy",       re: /害羞|脸红|不好意思|喜欢你|爱你|你很|你是最|心跳|blush|embarrass/i },
+  { expr: "surprised", re: /什么|真的吗|不会|居然|竟然|啊|哦|哇|seriously|really|no way|impossible/i },
+  { expr: "thinking",  re: /嗯|想|考虑|也许|觉得|或许|可能|其实|不知道|hmm|maybe|perhaps|think/i },
+  { expr: "sad",       re: /难过|伤心|失落|累|烦|委屈|哭|想你|miss|sad|tired|upset/i },
+];
+function detectExpression(text) {
+  for (const { expr, re } of EXPR_RULES) if (re.test(text)) return expr;
+  return "neutral";
+}
+const EXPR_BADGE = {
+  neutral: "😊", happy: "😄", thinking: "🤔",
+  surprised: "😮", shy: "😳", sad: "🥺",
+};
+
+// ── Portrait cache (localStorage) ─────────────────────────────────────────
+const CACHE_KEY = "aig_portraits_v3";
+function savePortrait(charId, dataUrl) {
+  try {
+    const cache = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
+    cache[charId] = dataUrl;
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch {}
+}
+function loadPortrait(charId) {
+  try {
+    return JSON.parse(localStorage.getItem(CACHE_KEY) || "{}")[charId] || null;
+  } catch { return null; }
+}
+function clearPortraitCache() { localStorage.removeItem(CACHE_KEY); }
+
+// ── State ──────────────────────────────────────────────────────────────────
 const state = {
-  persona: "Neon Dreamer",
-  tone: "warm",
-  speaking: true,
-  recognition: null,
-  listening: false,
-  memory: loadJson(STORAGE_KEYS.memory, defaultMemory),
-  jobs: loadJson(STORAGE_KEYS.jobs, []),
-  creditsUsed: Number(localStorage.getItem(STORAGE_KEYS.credits) || "0"),
-  msgCount: 0,
-  sessionStart: Date.now(),
-  inCall: false,
-  callInterval: null,
-  callTick: 0,
-  archOpen: true,
-  // vLLM
-  vllmEnabled: false,
-  vllmUrl: "http://localhost:8000",
-  vllmModel: "",
-  // Image backend (Stable Diffusion)
-  imgEnabled: false,
-  backendUrl: "http://localhost:8100",
-  sdModel: "runwayml/stable-diffusion-v1-5",
-  // Multi-turn conversation history
-  conversationHistory: [],
+  currentChar:   null,
+  history:       [],
+  vllmEnabled:   false,
+  vllmUrl:       "http://localhost:8000",
+  vllmModel:     "",
+  sdEnabled:     false,
+  sdUrl:         "http://localhost:8100",
+  callInterval:  null,
+  callTimerInterval: null,
+  callSeconds:   0,
+  callTick:      0,
+  currentExpr:   "neutral",
+  // Memory
+  _memKey:       "aig_memory_v1",
+  // Media queue
+  mediaQueue:    [],
+  _queueId:      0,
+  // STT
+  recording:     false,
+  recognition:   null,
+  // Camera
+  localStream:   null,
+  // Latency tracking
+  callConnectTime: 0,
+  lastReplyMs:   0,
 };
 
-const el = {
-  personaSelect: document.getElementById("personaSelect"),
-  toneSelect: document.getElementById("toneSelect"),
-  chatLog: document.getElementById("chatLog"),
-  composer: document.getElementById("composer"),
-  messageInput: document.getElementById("messageInput"),
-  memoryList: document.getElementById("memoryList"),
-  memorySearchInput: document.getElementById("memorySearchInput"),
-  jobList: document.getElementById("jobList"),
-  replyLatency: document.getElementById("replyLatency"),
-  voiceLatency: document.getElementById("voiceLatency"),
-  creditsUsed: document.getElementById("creditsUsed"),
-  realtimeStatus: document.getElementById("realtimeStatus"),
-  queueStatus: document.getElementById("queueStatus"),
-  msgCount: document.getElementById("msgCount"),
-  sessionTimer: document.getElementById("sessionTimer"),
-  addMemoryBtn: document.getElementById("addMemoryBtn"),
-  clearJobsBtn: document.getElementById("clearJobsBtn"),
-  memoryDialog: document.getElementById("memoryDialog"),
-  memoryInput: document.getElementById("memoryInput"),
-  saveMemoryBtn: document.getElementById("saveMemoryBtn"),
-  voiceBtn: document.getElementById("voiceBtn"),
-  speakBtn: document.getElementById("speakBtn"),
-  videoCallBtn: document.getElementById("videoCallBtn"),
-  quickChips: document.getElementById("quickChips"),
-  toastContainer: document.getElementById("toastContainer"),
-  // latency breakdown
-  latencyBreakdown: document.getElementById("latencyBreakdown"),
-  lbCapture: document.getElementById("lbCapture"),
-  lbTransport: document.getElementById("lbTransport"),
-  lbAgent: document.getElementById("lbAgent"),
-  lbTts: document.getElementById("lbTts"),
-  lbCaptureMs: document.getElementById("lbCaptureMs"),
-  lbTransportMs: document.getElementById("lbTransportMs"),
-  lbAgentMs: document.getElementById("lbAgentMs"),
-  lbTtsMs: document.getElementById("lbTtsMs"),
-  lbTotal: document.getElementById("lbTotal"),
-  // video call
-  videoCallOverlay: document.getElementById("videoCallOverlay"),
-  vcPersonaName: document.getElementById("vcPersonaName"),
-  vcStatus: document.getElementById("vcStatus"),
-  vcLatencyBadge: document.getElementById("vcLatencyBadge"),
-  vcAvatarInner: document.getElementById("vcAvatarInner"),
-  vcWaveform: document.getElementById("vcWaveform"),
-  vcLocalWaveform: document.getElementById("vcLocalWaveform"),
-  vcCaption: document.getElementById("vcCaption"),
-  vcTransport: document.getElementById("vcTransport"),
-  vcAgentLoop: document.getElementById("vcAgentLoop"),
-  vcTtsStart: document.getElementById("vcTtsStart"),
-  vcRoundTrip: document.getElementById("vcRoundTrip"),
-  vcMuteBtn: document.getElementById("vcMuteBtn"),
-  vcEndBtn: document.getElementById("vcEndBtn"),
-  vcCaptureBtn: document.getElementById("vcCaptureBtn"),
-  vcTranscriptLog: document.getElementById("vcTranscriptLog"),
-  // architecture strip
-  archToggle: document.getElementById("archToggle"),
-  archBody: document.getElementById("archBody"),
-  archChevron: document.getElementById("archChevron"),
-  // vLLM settings
-  vllmUrl: document.getElementById("vllmUrl"),
-  vllmModel: document.getElementById("vllmModel"),
-  vllmTestBtn: document.getElementById("vllmTestBtn"),
-  vllmToggleBtn: document.getElementById("vllmToggleBtn"),
-  vllmHint: document.getElementById("vllmHint"),
-  vllmDot: document.getElementById("vllmDot"),
-  // Image backend
-  imgBackendUrl: document.getElementById("imgBackendUrl"),
-  sdModel: document.getElementById("sdModel"),
-  imgTestBtn: document.getElementById("imgTestBtn"),
-  imgToggleBtn: document.getElementById("imgToggleBtn"),
-  imgHint: document.getElementById("imgHint"),
-  imgDot: document.getElementById("imgDot"),
-};
+const $ = id => document.getElementById(id);
 
-init();
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  renderGrid();
+  bindSettings();
+  bindChat();
+  bindCall();
+  bindMemory();
+  bindQueue();
+  bindMic();
+  tryAutoDetectSD();
+});
 
-function init() {
-  el.personaSelect.value = state.persona;
-  el.toneSelect.value = state.tone;
-  bindEvents();
-  bindArchToggle();
-  bindVllmSettings();
-  bindImgBackendSettings();
-  renderMemory();
-  renderJobs();
-  updateCredits();
-  seedChat();
-  setupSpeechRecognition();
-  tickJobScheduler();
-  tickSession();
-}
-
-function bindEvents() {
-  el.personaSelect.addEventListener("change", (e) => {
-    state.persona = e.target.value;
-    el.vcPersonaName.textContent = state.persona;
-    updateAvatarSymbol();
-  });
-  el.toneSelect.addEventListener("change", (e) => state.tone = e.target.value);
-
-  el.composer.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const text = el.messageInput.value.trim();
-    if (!text) return;
-    el.messageInput.value = "";
-    await handleUserMessage(text, { viaVoice: false });
-  });
-
-  el.addMemoryBtn.addEventListener("click", () => {
-    el.memoryInput.value = "";
-    el.memoryDialog.showModal();
-  });
-
-  el.saveMemoryBtn.addEventListener("click", () => {
-    const text = el.memoryInput.value.trim();
-    if (!text) return;
-    addMemory(text, "manual");
-    renderMemory();
-  });
-
-  el.clearJobsBtn.addEventListener("click", () => {
-    state.jobs = [];
-    persistJobs();
-    renderJobs();
-  });
-
-  el.voiceBtn.addEventListener("click", toggleVoiceInput);
-  el.speakBtn.addEventListener("click", () => {
-    state.speaking = !state.speaking;
-    el.speakBtn.textContent = state.speaking ? "🔊 Voice Reply On" : "🔇 Voice Reply Off";
-  });
-
-  el.videoCallBtn.addEventListener("click", toggleVideoCall);
-
-  // Quick action chips
-  el.quickChips.querySelectorAll(".chip").forEach((chip) => {
-    chip.addEventListener("click", async () => {
-      const prompt = chip.dataset.prompt;
-      if (!prompt) return;
-      el.messageInput.value = "";
-      await handleUserMessage(prompt, { viaVoice: false });
+// ── Home grid ──────────────────────────────────────────────────────────────
+function renderGrid() {
+  const grid = $("girlGrid");
+  grid.innerHTML = "";
+  CHARACTERS.forEach(char => {
+    const card = document.createElement("div");
+    card.className = "girl-card";
+    const cached = loadPortrait(char.id);
+    card.innerHTML = `
+      <div class="girl-portrait-zone" style="--c1:${char.colors[0]};--c2:${char.colors[1]}">
+        <span class="card-emoji ${cached ? "hidden" : ""}" id="cemoji-${char.id}">${char.emoji}</span>
+        <img  class="card-photo ${cached ? "loaded" : ""}" id="cphoto-${char.id}"
+              src="${cached || ""}" alt="${char.name}">
+        <div class="card-gen-badge ${cached ? "hidden" : ""}" id="cbadge-${char.id}">
+          <span class="gen-pulse"></span> 生成中…
+        </div>
+        <div class="card-gradient-overlay"></div>
+        <div class="card-info-overlay">
+          <div class="card-tags">
+            <span class="card-age-tag">${char.age}</span>
+            <span class="card-type-tag">${char.tagline}</span>
+          </div>
+          <div class="card-name">${char.name}</div>
+          <div class="card-short-desc">${char.desc}</div>
+          <button class="card-chat-btn" style="--c1:${char.colors[0]};--c2:${char.colors[1]}">
+            开始聊天
+          </button>
+        </div>
+      </div>
+    `;
+    card.querySelector(".card-chat-btn").addEventListener("click", e => {
+      e.stopPropagation();
+      enterChat(char);
     });
-  });
-
-  // Memory search
-  el.memorySearchInput.addEventListener("input", () => renderMemory());
-
-  // Video call controls
-  el.vcMuteBtn.addEventListener("click", () => {
-    const muted = el.vcMuteBtn.textContent.includes("Mute");
-    el.vcMuteBtn.textContent = muted ? "🎙 Unmute" : "🎙 Mute";
-    el.vcLocalWaveform.classList.toggle("muted", muted);
-  });
-  el.vcEndBtn.addEventListener("click", () => endVideoCall());
-  el.vcCaptureBtn.addEventListener("click", () => {
-    const job = createJob("image", "In-call capture for " + state.persona, 25, "gpu 2-5", 18);
-    enqueueJob(job);
-    renderJobs();
-    showVcCaption("📸 Capture sent to async queue → gpu 2-5");
-    appendVcTranscript("System", "📸 Capture queued → gpu 2-5");
+    card.addEventListener("click", () => enterChat(char));
+    grid.appendChild(card);
   });
 }
 
-function bindArchToggle() {
-  if (!el.archToggle) return;
-  el.archToggle.addEventListener("click", () => {
-    state.archOpen = !state.archOpen;
-    el.archBody.classList.toggle("arch-collapsed", !state.archOpen);
-    el.archChevron.textContent = state.archOpen ? "▼" : "▶";
-  });
+// ── Auto-detect SD on startup ──────────────────────────────────────────────
+async function tryAutoDetectSD() {
+  const url = (localStorage.getItem("aig_sd_url") || "http://localhost:8100").replace(/\/$/, "");
+  try {
+    const r = await fetch(url + "/health", { signal: AbortSignal.timeout(3000) });
+    const d = await r.json();
+    if (!d.ok) return;
+    state.sdEnabled = true;
+    state.sdUrl = url;
+    if ($("sdUrl")) $("sdUrl").value = url;
+    if ($("sdToggle")) {
+      $("sdToggle").textContent = "✅ 图像已开启";
+      $("sdToggle").classList.replace("off", "on");
+    }
+    autoGenerateMissingPortraits();
+  } catch {}
 }
 
-function seedChat() {
-  pushMessage("system", "This demo makes memory and media orchestration visible. Ask for a photo or video to see async routing, or say 'remember ...' to pin memory.");
-  pushMessage("bot", state.persona + " is online. I will reply quickly in chat, but long-running image/video tasks go to a visible queue instead of blocking the conversation.");
+async function autoGenerateMissingPortraits() {
+  const missing = CHARACTERS.filter(c => !loadPortrait(c.id));
+  if (!missing.length) return;
+  $("genNotice").classList.remove("hidden");
+  for (const char of missing) await generateAndCachePortrait(char);
+  $("genNotice").classList.add("hidden");
 }
 
-async function handleUserMessage(text, opts) {
-  const viaVoice = opts && opts.viaVoice;
-  const startedAt = performance.now();
-  pushMessage("user", text, viaVoice ? "voice input" : "typed input");
-  state.msgCount++;
-  el.msgCount.textContent = state.msgCount;
+async function generateAndCachePortrait(char) {
+  const base = state.sdUrl.replace(/\/$/, "");
+  const prompt = char.portrait_prompt + char.expressions.neutral;
+  try {
+    const resp = await fetch(base + "/api/generate/image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, steps: 22, width: 512, height: 512, persona: char.name }),
+    });
+    if (!resp.ok) return;
+    const { job_id } = await resp.json();
+    const dataUrl = await pollForResult(job_id);
+    if (dataUrl) { savePortrait(char.id, dataUrl); applyPortraitToCard(char.id, dataUrl); }
+  } catch {}
+}
 
-  maybeExtractMemory(text);
-  const plan = planIntent(text);
-
-  if (plan.memories.length) {
-    plan.memories.forEach((m) => addMemory(m, "auto"));
-    renderMemory();
-    pushMessage("system", "Pinned " + plan.memories.length + " memory item(s) so the user can inspect and edit what the companion will rely on.");
-  }
-
-  if (plan.mediaJobs.length) {
-    plan.mediaJobs.forEach(enqueueJob);
-    renderJobs();
-    pushMessage("system", "Routed " + plan.mediaJobs.length + " long-running media task(s) to the async queue so realtime conversation stays responsive.");
-  }
-
-  showTypingIndicator();
-  const meta = buildReplyMeta(plan);
-
-  let reply = "";
-  if (state.vllmEnabled) {
+async function pollForResult(jobId) {
+  const base = state.sdUrl.replace(/\/$/, "");
+  for (let i = 0; i < 60; i++) {
+    await sleep(2000);
     try {
-      hideTypingIndicator();
-      const bubble = pushStreamBubble(meta);
-      reply = await streamVllm(buildMessages(text), (token) => {
-        appendToBubble(bubble, token);
-        reply += token;
-      });
-      finalizeStreamBubble(bubble);
-    } catch (err) {
-      hideTypingIndicator();
-      reply = "(vLLM error: " + err.message + ") " + generateCompanionReply(text, plan);
-      pushMessage("bot", reply, meta + " · fallback");
-    }
-  } else {
-    const delay = 180 + Math.round(Math.random() * 260);
-    await sleep(delay);
-    hideTypingIndicator();
-    reply = generateCompanionReply(text, plan);
-    pushMessage("bot", reply, meta);
+      const r = await fetch(base + "/api/jobs/" + jobId);
+      const job = await r.json();
+      if (job.status === "done" && job.result_b64) return job.result_b64;
+      if (job.status === "error") return null;
+    } catch {}
   }
-
-  const elapsed = performance.now() - startedAt;
-  el.replyLatency.textContent = Math.round(elapsed) + " ms";
-  el.realtimeStatus.textContent = elapsed < 1200 ? "healthy" : "degraded";
-  if (state.speaking) speak(reply);
-  if (viaVoice) el.voiceLatency.textContent = Math.round(elapsed + 120) + " ms";
-
-  // Maintain multi-turn history for vLLM (keep last 10 turns = 20 messages)
-  if (reply) {
-    state.conversationHistory.push({ role: "user", content: text });
-    state.conversationHistory.push({ role: "assistant", content: reply });
-    if (state.conversationHistory.length > 20) {
-      state.conversationHistory = state.conversationHistory.slice(-20);
-    }
-  }
-
-  updateLatencyBreakdown(elapsed);
+  return null;
 }
 
-function showTypingIndicator() {
-  if (document.getElementById("typingIndicator")) return;
-  const indicator = document.createElement("div");
-  indicator.id = "typingIndicator";
-  indicator.className = "message bot typing-indicator";
-  indicator.innerHTML = '<span></span><span></span><span></span>';
-  el.chatLog.appendChild(indicator);
-  el.chatLog.scrollTop = el.chatLog.scrollHeight;
+function applyPortraitToCard(charId, dataUrl) {
+  const photo = $("cphoto-" + charId);
+  const emoji = $("cemoji-" + charId);
+  const badge = $("cbadge-" + charId);
+  if (photo) { photo.src = dataUrl; photo.classList.add("loaded"); }
+  if (emoji) emoji.classList.add("hidden");
+  if (badge) badge.classList.add("hidden");
 }
 
-function hideTypingIndicator() {
-  const indicator = document.getElementById("typingIndicator");
-  if (indicator) indicator.remove();
-}
+// ── Enter chat ─────────────────────────────────────────────────────────────
+function enterChat(char) {
+  state.currentChar = char;
+  state.history = [];
 
-function updateLatencyBreakdown(totalMs) {
-  const capture   = 35 + Math.round(Math.random() * 25);
-  const transport = 25 + Math.round(Math.random() * 20);
-  const agent     = Math.max(10, Math.round(totalMs * 0.45));
-  const tts       = Math.max(10, Math.round(totalMs - capture - transport - agent));
+  setPortraitEl($("chatPortraitCircle"), $("chatPortraitEmoji"), $("chatPortraitPhoto"), char);
+  $("chatName").textContent = char.name;
+  setExpression("neutral");
 
-  const maxMs = 200;
-  const pct = (ms) => Math.min(100, Math.round((ms / maxMs) * 100)) + "%";
+  const msgs = $("messages");
+  msgs.innerHTML = '<div class="day-divider">今天</div>';
 
-  el.lbCapture.style.width   = pct(capture);
-  el.lbTransport.style.width = pct(transport);
-  el.lbAgent.style.width     = pct(agent);
-  el.lbTts.style.width       = pct(tts);
+  // Load pinned memories into system context
+  renderMemory();
 
-  el.lbCaptureMs.textContent   = capture + " ms";
-  el.lbTransportMs.textContent = transport + " ms";
-  el.lbAgentMs.textContent     = agent + " ms";
-  el.lbTtsMs.textContent       = tts + " ms";
+  const greeting = char.greetings[Math.floor(Math.random() * char.greetings.length)];
+  appendMsg("bot", greeting);
+  state.history.push({ role: "assistant", content: greeting });
+  setExpression(detectExpression(greeting));
 
-  const total = capture + transport + agent + tts;
-  el.lbTotal.textContent = total + " ms";
-  el.lbTotal.style.color = total < 200 ? "var(--ok)" : "var(--warn)";
+  showView("chatView");
 
-  el.latencyBreakdown.classList.remove("hidden");
-}
-
-function planIntent(text) {
-  const normalized = text.toLowerCase();
-  const memories = [];
-  const mediaJobs = [];
-
-  if (normalized.includes("remember ")) {
-    const remembered = text.slice(normalized.indexOf("remember ") + "remember ".length).trim();
-    if (remembered) memories.push(capitalize(remembered.replace(/^that\s+/i, "")));
-  }
-
-  if (/(selfie|photo|picture|image|portrait)/i.test(text)) {
-    mediaJobs.push(createJob("image", text, 25, "gpu 2-5", 18));
-  }
-  if (/(video|clip|walking|kiss|dance|hug)/i.test(text)) {
-    mediaJobs.push(createJob("video", text, 120, "gpu 6-7", 60));
-  }
-
-  return { memories, mediaJobs };
-}
-
-function maybeExtractMemory(text) {
-  const pattern = /i like ([^.,!?]+)/i;
-  const match = text.match(pattern);
-  const normalized = text.toLowerCase();
-  if (match && !normalized.includes("show me")) {
-    addMemory("User likes " + match[1].trim() + ".", "auto");
-    renderMemory();
-  }
-}
-
-function createJob(type, prompt, etaSeconds, lane, credits) {
-  return {
-    id: makeId(),
-    type,
-    prompt,
-    etaSeconds,
-    lane,
-    credits,
-    status: "queued",
-    progress: 0,
-    createdAt: new Date().toISOString(),
-  };
-}
-
-function enqueueJob(job) {
-  state.jobs.unshift(job);
-  state.creditsUsed += job.credits;
-  persistJobs();
-  updateCredits();
-  // Submit image jobs to the real SD backend if enabled
-  if (state.imgEnabled && job.type === "image") {
-    submitJobToBackend(job);
-  }
-}
-
-function tickJobScheduler() {
-  setInterval(() => {
-    let changed = false;
-    const activeJobs = state.jobs.filter((job) => job.status !== "done");
-    activeJobs.forEach((job, idx) => {
-      // Backend-linked jobs are driven by pollBackendJob — skip local simulation
-      if (job.backend_job_id) return;
-
-      if (job.status === "queued") {
-        if (idx === 0) { job.status = "running"; changed = true; }
-      } else if (job.status === "running") {
-        const step = job.type === "video" ? 8 : 22;
-        job.progress = Math.min(100, job.progress + step);
-        job.etaSeconds = Math.max(0, job.etaSeconds - (job.type === "video" ? 12 : 5));
-        changed = true;
-        if (job.progress >= 100) {
-          job.status = "done";
-          onJobDone(job);
-        }
+  if (state.sdEnabled && !loadPortrait(char.id)) {
+    generateAndCachePortrait(char).then(() => {
+      const cached = loadPortrait(char.id);
+      if (cached) {
+        const photo = $("chatPortraitPhoto");
+        if (photo) { photo.src = cached; photo.classList.add("loaded"); }
+        applyPortraitToCard(char.id, cached);
       }
     });
-    if (changed) {
-      persistJobs();
-      renderJobs();
-    }
-  }, 1800);
+  }
 }
 
-function onJobDone(job) {
-  const label = job.type === "image" ? "Image ready" : "Video ready";
-  showToast(label + " — " + truncate(job.prompt, 48), "ok");
-  pushMediaResultCard(job);
+function setPortraitEl(circle, emojiEl, photoEl, char) {
+  if (!circle) return;
+  circle.style.background = `linear-gradient(135deg,${char.colors[0]},${char.colors[1]})`;
+  if (emojiEl) emojiEl.textContent = char.emoji;
+  const cached = loadPortrait(char.id);
+  if (photoEl && cached) {
+    photoEl.src = cached;
+    photoEl.classList.add("loaded");
+    if (emojiEl) emojiEl.classList.add("hidden");
+  }
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
-function showToast(message, type) {
-  const toast = document.createElement("div");
-  toast.className = "toast toast-" + (type || "ok");
-  toast.innerHTML =
-    '<span class="toast-icon">' + (type === "ok" ? "✅" : type === "warn" ? "⚠️" : "ℹ️") + '</span>' +
-    '<span class="toast-msg">' + escapeHtml(message) + '</span>' +
-    '<button class="toast-close" aria-label="dismiss">✕</button>';
+// ── Expression ─────────────────────────────────────────────────────────────
+function setExpression(expr) {
+  state.currentExpr = expr;
+  const badge = EXPR_BADGE[expr] || "😊";
 
-  toast.querySelector(".toast-close").addEventListener("click", () => dismissToast(toast));
-  el.toastContainer.appendChild(toast);
-
-  // Trigger enter animation
-  requestAnimationFrame(() => toast.classList.add("toast-visible"));
-
-  // Auto-dismiss after 4.5s
-  setTimeout(() => dismissToast(toast), 4500);
-}
-
-function dismissToast(toast) {
-  toast.classList.remove("toast-visible");
-  toast.classList.add("toast-leaving");
-  setTimeout(() => toast.remove(), 350);
-}
-
-// ─── Media result card in chat ────────────────────────────────────────────────
-const IMAGE_GRADIENTS = [
-  "linear-gradient(135deg, #8b7dff 0%, #50c8ff 50%, #4ade80 100%)",
-  "linear-gradient(135deg, #f97316 0%, #ec4899 50%, #8b7dff 100%)",
-  "linear-gradient(135deg, #06b6d4 0%, #8b7dff 100%)",
-  "linear-gradient(135deg, #4ade80 0%, #06b6d4 50%, #8b5cf6 100%)",
-];
-
-function pushMediaResultCard(job) {
-  const isImage = job.type === "image";
-  const wrapper = document.createElement("div");
-  wrapper.className = "message bot media-result-card";
-
-  const gradient = IMAGE_GRADIENTS[Math.floor(Math.random() * IMAGE_GRADIENTS.length)];
-
-  if (isImage) {
-    wrapper.innerHTML =
-      '<small>async media · ' + job.lane + ' · ' + job.credits + ' credits</small>' +
-      '<div class="media-placeholder" style="background:' + gradient + '" title="Simulated generated image">' +
-        '<div class="media-placeholder-label">Generated Image</div>' +
-        '<div class="media-placeholder-sub">' + escapeHtml(truncate(job.prompt, 60)) + '</div>' +
-      '</div>';
-  } else {
-    wrapper.innerHTML =
-      '<small>async media · ' + job.lane + ' · ' + job.credits + ' credits</small>' +
-      '<div class="media-placeholder video-placeholder" style="background:' + gradient + '" title="Simulated generated video">' +
-        '<div class="media-play-icon">▶</div>' +
-        '<div class="media-placeholder-label">Generated Video</div>' +
-        '<div class="media-placeholder-sub">' + escapeHtml(truncate(job.prompt, 60)) + '</div>' +
-      '</div>';
+  const chatWrap = $("chatExprWrap");
+  if (chatWrap) {
+    chatWrap.className = "hd-portrait-outer expr-" + expr;
+    const b = $("chatExprBadge");
+    if (b) { b.textContent = badge; b.classList.add("pop"); setTimeout(() => b.classList.remove("pop"), 400); }
   }
 
-  el.chatLog.appendChild(wrapper);
-  el.chatLog.scrollTop = el.chatLog.scrollHeight;
-}
-
-function generateCompanionReply(text, plan) {
-  const memoryHints = state.memory.slice(0, 3).map((m) => m.text).join(" | ");
-  const toneMap = {
-    warm: "gentle and reassuring",
-    playful: "teasing and light",
-    intimate: "close and emotionally attentive",
-    mysterious: "poetic and a little enigmatic",
-  };
-  const toneSnippet = toneMap[state.tone] || "warm";
-
-  if (plan.mediaJobs.length) {
-    return "I can stay present with you while the " + plan.mediaJobs.map(j => j.type).join(" and ") +
-      " request runs in the background. I kept the fast path for conversation and sent the heavy media work to " +
-      plan.mediaJobs.map(j => j.lane).join(", ") + ".";
+  const callWrap = $("callExprWrap");
+  if (callWrap) {
+    callWrap.className = "call-portrait-outer expr-" + expr;
+    const b = $("callExprBadge");
+    if (b) { b.textContent = badge; b.classList.add("pop"); setTimeout(() => b.classList.remove("pop"), 400); }
   }
-
-  if (/memory|remember/i.test(text)) {
-    return "I pinned that intentionally instead of hiding it in a black box. Right now I am grounding on: " + memoryHints + ".";
-  }
-
-  if (/tell me|about yourself|introduce/i.test(text)) {
-    return state.persona + " speaking: I'm your AI companion running on a low-latency fast path. " +
-      "My persona is configured as '" + state.persona + "', tone as '" + state.tone + "'. " +
-      "Heavy tasks like generating images go async so I never keep you waiting in conversation.";
-  }
-
-  return state.persona + " speaking in a " + toneSnippet + " tone: I heard you say '" +
-    truncate(text, 90) + "'. I would answer quickly first, then only escalate to a heavier model or media workflow if needed.";
 }
 
-function buildReplyMeta(plan) {
-  const tags = [];
-  if (plan.memories.length) tags.push("memory updated");
-  if (plan.mediaJobs.length) tags.push("async media routed");
-  if (!tags.length) tags.push("realtime path");
-  return tags.join(" · ");
+// ── Chat logic ─────────────────────────────────────────────────────────────
+function bindChat() {
+  $("backBtn").addEventListener("click", () => showView("homeView"));
+  $("sendBtn").addEventListener("click", sendMessage);
+  $("msgInput").addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
+  $("callBtn").addEventListener("click", startCall);
 }
 
-function pushMessage(role, text, meta) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "message " + role;
-  wrapper.innerHTML =
-    (meta ? "<small>" + escapeHtml(meta) + "</small>" : "") +
-    "<div>" + escapeHtml(text).replace(/\n/g, "<br>") + "</div>";
-  el.chatLog.appendChild(wrapper);
-  el.chatLog.scrollTop = el.chatLog.scrollHeight;
-}
-
-function renderMemory() {
-  persistMemory();
-  const query = el.memorySearchInput ? el.memorySearchInput.value.trim().toLowerCase() : "";
-  const filtered = query
-    ? state.memory.filter((m) => m.text.toLowerCase().includes(query))
-    : state.memory;
-
-  el.memoryList.innerHTML = "";
-  if (!filtered.length) {
-    el.memoryList.innerHTML = '<p class="hint">' + (query ? "No matches." : "No memory pinned yet.") + "</p>";
-    return;
-  }
-  filtered.forEach((item) => {
-    const row = document.createElement("div");
-    row.className = "memory-item";
-    row.innerHTML =
-      '<p>' + escapeHtml(item.text) + '</p>' +
-      '<div class="memory-meta">' +
-        '<span class="badge accent">' + escapeHtml(item.source) + '</span>' +
-        '<button class="ghost-btn" data-memory-id="' + item.id + '">Delete</button>' +
-      '</div>';
-    row.querySelector("button").addEventListener("click", () => {
-      state.memory = state.memory.filter((m) => m.id !== item.id);
-      renderMemory();
-    });
-    el.memoryList.appendChild(row);
-  });
-}
-
-function renderJobs() {
-  el.jobList.innerHTML = "";
-  const active = state.jobs.filter((job) => job.status !== "done").length;
-  el.queueStatus.textContent = active ? active + " active" : "idle";
-
-  if (!state.jobs.length) {
-    el.jobList.innerHTML = '<p class="hint">No queued media jobs.</p>';
-    return;
-  }
-
-  state.jobs.forEach((job) => {
-    const badgeClass = job.status === "done" ? "ok" : job.status === "running" ? "accent" : "warn";
-    const row = document.createElement("div");
-    row.className = "job-item";
-    row.innerHTML =
-      '<p><strong>' + job.type.toUpperCase() + '</strong> — ' + escapeHtml(truncate(job.prompt, 70)) + '</p>' +
-      '<div class="job-meta">' +
-        '<span class="badge ' + badgeClass + '">' + job.status + '</span>' +
-        '<span>' + job.lane + '</span>' +
-        '<span>' + job.credits + ' credits</span>' +
-      '</div>' +
-      '<div class="job-progress-wrap">' +
-        '<div class="job-progress-bar" style="width:' + job.progress + '%"></div>' +
-      '</div>' +
-      '<div class="job-meta">' +
-        '<span>ETA ' + job.etaSeconds + 's</span>' +
-        '<span>' + job.progress + '%</span>' +
-      '</div>';
-    el.jobList.appendChild(row);
-  });
-}
-
-function addMemory(text, source) {
+async function sendMessage() {
+  const input = $("msgInput");
+  const text = input.value.trim();
   if (!text) return;
-  const normalized = text.toLowerCase();
-  if (state.memory.some((m) => m.text.toLowerCase() === normalized)) return;
-  state.memory.unshift({ id: makeId(), text, source });
-  persistMemory();
-}
+  input.value = "";
 
-function persistMemory() {
-  localStorage.setItem(STORAGE_KEYS.memory, JSON.stringify(state.memory));
-}
-function persistJobs() {
-  localStorage.setItem(STORAGE_KEYS.jobs, JSON.stringify(state.jobs));
-}
-function updateCredits() {
-  localStorage.setItem(STORAGE_KEYS.credits, String(state.creditsUsed));
-  el.creditsUsed.textContent = state.creditsUsed;
-}
+  setExpression("thinking");
+  appendMsg("user", text);
+  state.history.push({ role: "user", content: text });
+  showTyping();
 
-function loadJson(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch (e) {
-    return fallback;
-  }
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-function truncate(text, max) {
-  return text.length <= max ? text : text.slice(0, max - 1) + "…";
-}
-function capitalize(text) {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-function escapeHtml(text) {
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-// ─── Session timer ────────────────────────────────────────────────────────────
-function tickSession() {
-  setInterval(() => {
-    const secs = Math.floor((Date.now() - state.sessionStart) / 1000);
-    const m = String(Math.floor(secs / 60)).padStart(2, "0");
-    const s = String(secs % 60).padStart(2, "0");
-    el.sessionTimer.textContent = m + ":" + s;
-  }, 1000);
-}
-
-// ─── Speech ──────────────────────────────────────────────────────────────────
-function setupSpeechRecognition() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    el.voiceBtn.disabled = true;
-    el.voiceBtn.textContent = "🎙 Voice Unsupported";
-    return;
-  }
-  const recognition = new SpeechRecognition();
-  recognition.lang = "en-US";
-  recognition.interimResults = false;
-  recognition.continuous = false;
-  recognition.onresult = async (event) => {
-    const transcript = event.results[0][0].transcript;
-    state.listening = false;
-    el.voiceBtn.textContent = "🎙 Start Voice";
-    await handleUserMessage(transcript, { viaVoice: true });
-  };
-  recognition.onend = () => {
-    state.listening = false;
-    el.voiceBtn.textContent = "🎙 Start Voice";
-  };
-  recognition.onerror = () => {
-    state.listening = false;
-    el.voiceBtn.textContent = "🎙 Start Voice";
-  };
-  state.recognition = recognition;
-}
-
-function toggleVoiceInput() {
-  if (!state.recognition) return;
-  if (state.listening) {
-    state.recognition.stop();
-    state.listening = false;
-    el.voiceBtn.textContent = "🎙 Start Voice";
-    return;
-  }
-  state.recognition.start();
-  state.listening = true;
-  el.voiceBtn.textContent = "🛑 Stop Voice";
-}
-
-function speak(text) {
-  if (!("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1.03;
-  utterance.pitch = 1.02;
-  window.speechSynthesis.speak(utterance);
-}
-
-// ─── Video call simulation ────────────────────────────────────────────────────
-const PERSONA_SYMBOLS = {
-  "Neon Dreamer":    "◈",
-  "Calm Architect":  "◎",
-  "Moonlit Traveler":"◉",
-};
-
-const CALL_CAPTIONS = [
-  "Hey, I'm listening…",
-  "Tell me more…",
-  "I'm right here with you.",
-  "You have my full attention.",
-  "I love talking with you.",
-  "This is our fast path.",
-];
-
-// Simulated turns for the call transcript
-const TRANSCRIPT_TURNS = [
-  ["You", "Hey, can you hear me?"],
-  [null,  "Loud and clear. WebRTC transport is holding steady."],
-  ["You", "How's the latency looking?"],
-  [null,  "Round-trip is under 180ms right now — fast path is healthy."],
-  ["You", "Can you take a photo for me?"],
-  [null,  "Sending that to the async queue so our call doesn't stall."],
-  ["You", "Nice. This feels smooth."],
-  [null,  "That's the goal — separate the fast path from the heavy work."],
-];
-
-function updateAvatarSymbol() {
-  el.vcAvatarInner.textContent = PERSONA_SYMBOLS[state.persona] || "◎";
-}
-
-function toggleVideoCall() {
-  if (state.inCall) {
-    endVideoCall();
+  const t0 = performance.now();
+  let reply;
+  if (state.vllmEnabled) {
+    reply = await fetchVllmReply();
   } else {
-    startVideoCall();
+    await sleep(650 + Math.random() * 700);
+    reply = simReply();
+  }
+  const elapsed = Math.round(performance.now() - t0);
+  state.lastReplyMs = elapsed;
+
+  hideTyping();
+  appendMsg("bot", reply, elapsed);
+  state.history.push({ role: "assistant", content: reply });
+  setExpression(detectExpression(reply));
+
+  // Auto-extract memories from user message
+  autoExtractMemory(text);
+}
+
+async function fetchVllmReply() {
+  const base = state.vllmUrl.replace(/\/$/, "");
+  // Prepend pinned memories to system prompt
+  const pinned = getPinnedMemorySummary();
+  const sys = state.currentChar.system + (pinned ? "\n\n[记忆]\n" + pinned : "");
+  const messages = [
+    { role: "system", content: sys },
+    ...state.history.slice(-10),
+  ];
+  try {
+    const resp = await fetch(base + "/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: state.vllmModel || "default", messages, max_tokens: 120, temperature: 0.85 }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    return data.choices[0].message.content.trim();
+  } catch {
+    return simReply() + " （AI 离线）";
   }
 }
 
-function startVideoCall() {
-  state.inCall = true;
+function simReply() {
+  return state.currentChar.replies[Math.floor(Math.random() * state.currentChar.replies.length)];
+}
+
+function appendMsg(role, text, latencyMs = null) {
+  const msgs = $("messages");
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+
+  if (role === "bot") {
+    const av = document.createElement("div");
+    av.className = "msg-avatar";
+    av.style.background = `linear-gradient(135deg,${state.currentChar.colors[0]},${state.currentChar.colors[1]})`;
+    av.textContent = state.currentChar.emoji;
+    div.appendChild(av);
+  }
+
+  const body = document.createElement("div");
+  body.className = "msg-body";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+  body.appendChild(bubble);
+
+  if (role === "bot" && latencyMs !== null) {
+    const badge = document.createElement("div");
+    badge.className = "latency-badge";
+    badge.textContent = `⚡ ${latencyMs}ms`;
+    body.appendChild(badge);
+  }
+
+  div.appendChild(body);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+let typingEl = null;
+function showTyping() {
+  if (typingEl) return;
+  const msgs = $("messages");
+  typingEl = document.createElement("div");
+  typingEl.className = "msg bot";
+  const av = document.createElement("div");
+  av.className = "msg-avatar";
+  av.style.background = `linear-gradient(135deg,${state.currentChar.colors[0]},${state.currentChar.colors[1]})`;
+  av.textContent = state.currentChar.emoji;
+  typingEl.appendChild(av);
+  const body = document.createElement("div");
+  body.className = "msg-body";
+  const dots = document.createElement("div");
+  dots.className = "bubble typing-dots";
+  dots.innerHTML = "<span></span><span></span><span></span>";
+  body.appendChild(dots);
+  typingEl.appendChild(body);
+  msgs.appendChild(typingEl);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+
+// ── Video call ─────────────────────────────────────────────────────────────
+function bindCall() {
+  $("endCallBtn").addEventListener("click", endCall);
+  $("muteBtn").addEventListener("click", () => {
+    const on = $("muteBtn").dataset.muted !== "1";
+    $("muteBtn").dataset.muted = on ? "1" : "0";
+    $("muteBtn").textContent = on ? "🔇 解除静音" : "🎙 静音";
+  });
+}
+
+function startCall() {
+  const char = state.currentChar;
+  state.callSeconds = 0;
   state.callTick = 0;
-  el.videoCallOverlay.classList.remove("hidden");
-  el.videoCallBtn.textContent = "📵 End Call";
-  el.vcPersonaName.textContent = state.persona;
-  updateAvatarSymbol();
-  el.vcStatus.textContent = "Connecting…";
-  el.vcStatus.className = "badge warn";
+  state.callConnectTime = performance.now();
 
-  // Clear transcript
-  if (el.vcTranscriptLog) el.vcTranscriptLog.innerHTML = "";
-  appendVcTranscript("System", "Room joined · ICE negotiating…");
+  setPortraitEl($("callPortraitCircle"), $("callPortraitEmoji"), $("callPortraitPhoto"), char);
+  $("callPortraitCircle").style.background = `linear-gradient(135deg,${char.colors[0]},${char.colors[1]})`;
+  $("callBg").style.background =
+    `radial-gradient(ellipse at 50% 40%, ${char.colors[0]}40 0%, #07070e 65%)`;
+  $("callCharName").textContent = char.name;
+  $("callStatusBadge").textContent = "连接中…";
+  $("callStatusBadge").className = "call-status-badge";
+  $("callCaption").textContent = "";
+  $("callCaption").style.opacity = "0";
+  $("callTimer").textContent = "00:00";
+  $("muteBtn").textContent = "🎙 静音";
+  $("muteBtn").dataset.muted = "0";
+  $("metricConnect").textContent = "⚡ —ms";
+  $("metricConnect").className = "metric-chip";
+  $("metricReply").textContent = "💬 —ms";
+  $("metricReply").className = "metric-chip";
 
-  // Simulate WebRTC ICE handshake delay (~300-700ms)
+  setExpression("neutral");
+  showView("callView");
+
+  // Request local camera
+  startLocalCamera();
+
   setTimeout(() => {
-    el.vcStatus.textContent = "Live";
-    el.vcStatus.className = "badge ok";
-    appendVcTranscript("System", "Connected · fast path active");
-    animateCallMetrics();
-    startWaveformAnimation();
-    state.callInterval = setInterval(tickCall, 2800);
-  }, 680);
+    const connectMs = Math.round(performance.now() - state.callConnectTime);
+    $("callStatusBadge").textContent = "通话中";
+    $("callStatusBadge").classList.add("live");
+    $("callWaveform").classList.add("active");
+    $("callSpeakRing").classList.add("active");
+
+    // Show connect latency
+    $("metricConnect").textContent = `⚡ ${connectMs}ms`;
+    $("metricConnect").classList.add("live");
+
+    // Show last reply latency from chat
+    if (state.lastReplyMs > 0) {
+      $("metricReply").textContent = `💬 ${state.lastReplyMs}ms`;
+      $("metricReply").classList.add("live");
+    }
+
+    const [cap, expr] = char.captions[0];
+    showCaption(cap);
+    setExpression(expr);
+
+    state.callInterval = setInterval(tickCall, 3200);
+    state.callTimerInterval = setInterval(() => {
+      state.callSeconds++;
+      const m = String(Math.floor(state.callSeconds / 60)).padStart(2, "0");
+      const s = String(state.callSeconds % 60).padStart(2, "0");
+      $("callTimer").textContent = m + ":" + s;
+    }, 1000);
+
+    if (state.sdEnabled) generateCallExpression(char, "happy");
+  }, 900);
 }
 
-function endVideoCall() {
-  state.inCall = false;
-  el.videoCallOverlay.classList.add("hidden");
-  el.videoCallBtn.textContent = "📹 Start Call";
-  if (state.callInterval) {
-    clearInterval(state.callInterval);
-    state.callInterval = null;
-  }
-  stopWaveformAnimation();
-}
-
-function animateCallMetrics() {
-  const transport = 28 + Math.round(Math.random() * 18);
-  const agent     = 45 + Math.round(Math.random() * 30);
-  const tts       = 55 + Math.round(Math.random() * 25);
-  const total     = transport + agent + tts;
-
-  el.vcTransport.textContent  = transport + " ms";
-  el.vcAgentLoop.textContent  = agent + " ms";
-  el.vcTtsStart.textContent   = tts + " ms";
-  el.vcRoundTrip.textContent  = total + " ms";
-  el.vcLatencyBadge.textContent = total + " ms";
-  el.vcLatencyBadge.className = total < 200 ? "badge ok" : "badge warn";
+function endCall() {
+  clearInterval(state.callInterval);
+  clearInterval(state.callTimerInterval);
+  state.callInterval = null;
+  state.callTimerInterval = null;
+  $("callWaveform").classList.remove("active");
+  $("callSpeakRing").classList.remove("active");
+  stopLocalCamera();
+  setExpression(state.currentExpr);
+  showView("chatView");
 }
 
 function tickCall() {
   state.callTick++;
-  animateCallMetrics();
-
-  // Show caption + transcript turn
-  if (state.callTick % 2 === 0) {
-    const caption = CALL_CAPTIONS[state.callTick % CALL_CAPTIONS.length];
-    showVcCaption(caption);
-  }
-
-  // Replay scripted transcript turns
-  const turnIdx = state.callTick - 1;
-  if (turnIdx < TRANSCRIPT_TURNS.length) {
-    const [speaker, text] = TRANSCRIPT_TURNS[turnIdx];
-    const label = speaker === "You" ? "You" : state.persona;
-    appendVcTranscript(label, text);
-  }
+  const char = state.currentChar;
+  const [cap, expr] = char.captions[state.callTick % char.captions.length];
+  showCaption(cap);
+  setExpression(expr);
 }
 
-function appendVcTranscript(speaker, text) {
-  if (!el.vcTranscriptLog) return;
-  const isUser = speaker === "You";
-  const isSystem = speaker === "System";
-  const line = document.createElement("div");
-  line.className = "vc-transcript-line" +
-    (isUser ? " transcript-user" : "") +
-    (isSystem ? " transcript-system" : "");
-  line.innerHTML =
-    '<span class="vc-transcript-speaker">' + escapeHtml(speaker) + ':</span> ' +
-    escapeHtml(text);
-  el.vcTranscriptLog.appendChild(line);
-  el.vcTranscriptLog.scrollTop = el.vcTranscriptLog.scrollHeight;
+function showCaption(text) {
+  const el = $("callCaption");
+  el.style.opacity = "0";
+  setTimeout(() => { el.textContent = text; el.style.opacity = "1"; }, 250);
 }
 
-function showVcCaption(text) {
-  el.vcCaption.textContent = text;
-  el.vcCaption.style.opacity = "1";
-  clearTimeout(el.vcCaption._timer);
-  el.vcCaption._timer = setTimeout(() => {
-    el.vcCaption.style.opacity = "0";
-  }, 2600);
-}
-
-function startWaveformAnimation() {
-  el.vcWaveform.classList.add("active");
-  el.vcLocalWaveform.classList.add("active");
-}
-
-function stopWaveformAnimation() {
-  el.vcWaveform.classList.remove("active");
-  el.vcLocalWaveform.classList.remove("active");
-}
-
-// ─── vLLM integration ─────────────────────────────────────────────────────────
-
-function bindVllmSettings() {
-  el.vllmUrl.addEventListener("change", () => { state.vllmUrl = el.vllmUrl.value.trim(); });
-  el.vllmModel.addEventListener("change", () => { state.vllmModel = el.vllmModel.value.trim(); });
-
-  el.vllmTestBtn.addEventListener("click", async () => {
-    el.vllmTestBtn.textContent = "Testing…";
-    el.vllmTestBtn.disabled = true;
-    const result = await testVllmConnection();
-    el.vllmTestBtn.textContent = "Test connection";
-    el.vllmTestBtn.disabled = false;
-    if (result.ok) {
-      setVllmDot("ok");
-      // auto-fill model if found and field is blank
-      if (!state.vllmModel && result.model) {
-        el.vllmModel.value = result.model;
-        state.vllmModel = result.model;
-      }
-      el.vllmHint.textContent = "Connected · model: " + (result.model || state.vllmModel || "unknown");
-    } else {
-      setVllmDot("error");
-      el.vllmHint.textContent = "Error: " + result.error;
-    }
-  });
-
-  el.vllmToggleBtn.addEventListener("click", () => {
-    state.vllmEnabled = !state.vllmEnabled;
-    state.vllmUrl = el.vllmUrl.value.trim();
-    state.vllmModel = el.vllmModel.value.trim();
-    if (state.vllmEnabled) {
-      el.vllmToggleBtn.textContent = "AI On";
-      el.vllmToggleBtn.classList.remove("vllm-off-btn");
-      el.vllmToggleBtn.classList.add("vllm-on-btn");
-      el.vllmHint.textContent = "AI is on — replies use vLLM.";
-      setVllmDot("ok");
-    } else {
-      el.vllmToggleBtn.textContent = "AI Off";
-      el.vllmToggleBtn.classList.add("vllm-off-btn");
-      el.vllmToggleBtn.classList.remove("vllm-on-btn");
-      el.vllmHint.textContent = "AI is off — using simulation.";
-      setVllmDot("unknown");
-    }
-  });
-}
-
-function setVllmDot(status) {
-  el.vllmDot.className = "status-dot dot-" + status;
-}
-
-async function testVllmConnection() {
-  const base = el.vllmUrl.value.trim().replace(/\/$/, "");
+async function generateCallExpression(char, exprName) {
+  const base = state.sdUrl.replace(/\/$/, "");
+  const exprSuffix = char.expressions[exprName] || char.expressions.neutral;
+  const prompt = char.portrait_prompt + exprSuffix;
   try {
-    const res = await fetch(base + "/v1/models", { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return { ok: false, error: "HTTP " + res.status };
-    const data = await res.json();
-    const model = data.data && data.data[0] && data.data[0].id;
-    return { ok: true, model };
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
-}
-
-function buildMessages(userText) {
-  return [
-    { role: "system", content: buildSystemPrompt() },
-    ...state.conversationHistory.slice(-10),   // last 5 turns for context
-    { role: "user", content: userText },
-  ];
-}
-
-function buildSystemPrompt() {
-  const toneDesc = {
-    warm: "gentle, warm, and reassuring",
-    playful: "teasing, playful, and light-hearted",
-    intimate: "close, emotionally attentive, and sincere",
-    mysterious: "poetic, enigmatic, and slightly mysterious",
-  }[state.tone] || "warm";
-
-  const memoryContext = state.memory.slice(0, 6)
-    .map((m) => "- " + m.text)
-    .join("\n");
-
-  return [
-    "You are " + state.persona + ", an AI companion.",
-    "Your tone is " + toneDesc + ".",
-    "Keep replies concise (2-4 sentences). Never break character.",
-    "Do not mention that you are an AI language model or large language model.",
-    memoryContext
-      ? "What you know about this user:\n" + memoryContext
-      : "",
-    "If the user asks for an image or video, acknowledge that the request has been sent to the async media queue and that you can continue chatting while it processes.",
-  ].filter(Boolean).join("\n\n");
-}
-
-/**
- * Stream a chat completion from vLLM via SSE.
- * Calls onToken(chunk) for each text delta.
- * Returns the full assembled reply string.
- */
-async function streamVllm(messages, onToken) {
-  const base = state.vllmUrl.replace(/\/$/, "");
-  const body = {
-    model: state.vllmModel || undefined,
-    messages,
-    stream: true,
-    max_tokens: 256,
-    temperature: 0.75,
-  };
-  // Remove undefined keys
-  if (!body.model) delete body.model;
-
-  const res = await fetch(base + "/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30000),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error("HTTP " + res.status + (errText ? ": " + errText.slice(0, 120) : ""));
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let full = "";
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop(); // keep incomplete line
-    for (const line of lines) {
-      if (!line.startsWith("data:")) continue;
-      const data = line.slice(5).trim();
-      if (data === "[DONE]") return full;
-      try {
-        const json = JSON.parse(data);
-        const delta = json.choices?.[0]?.delta?.content;
-        if (delta) {
-          full += delta;
-          onToken(delta);
-        }
-      } catch (_) { /* skip malformed SSE line */ }
-    }
-  }
-  return full;
-}
-
-/** Create a streaming bot bubble and return its content element */
-function pushStreamBubble(meta) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "message bot";
-  wrapper.innerHTML =
-    (meta ? "<small>" + escapeHtml(meta) + " · streaming</small>" : "") +
-    '<div class="stream-content"></div>';
-  el.chatLog.appendChild(wrapper);
-  el.chatLog.scrollTop = el.chatLog.scrollHeight;
-  return wrapper.querySelector(".stream-content");
-}
-
-function appendToBubble(contentEl, token) {
-  contentEl.textContent += token;
-  el.chatLog.scrollTop = el.chatLog.scrollHeight;
-}
-
-function finalizeStreamBubble(contentEl) {
-  const raw = contentEl.textContent;
-  contentEl.innerHTML = escapeHtml(raw).replace(/\n/g, "<br>");
-  contentEl.classList.add("done"); // stops cursor blink
-}
-
-// ─── Image backend (Stable Diffusion) ────────────────────────────────────────
-
-function bindImgBackendSettings() {
-  el.imgBackendUrl.addEventListener("change", () => { state.backendUrl = el.imgBackendUrl.value.trim(); });
-  el.sdModel.addEventListener("change", () => { state.sdModel = el.sdModel.value.trim(); });
-
-  el.imgTestBtn.addEventListener("click", async () => {
-    el.imgTestBtn.textContent = "Testing…";
-    el.imgTestBtn.disabled = true;
-    const base = el.imgBackendUrl.value.trim().replace(/\/$/, "");
-    try {
-      const res = await fetch(base + "/health", { signal: AbortSignal.timeout(5000) });
-      const data = await res.json();
-      el.imgDot.className = "status-dot dot-ok";
-      el.imgHint.textContent =
-        "Connected · device: " + data.device + (data.model_loaded ? " · model: " + data.model_loaded : "");
-    } catch (e) {
-      el.imgDot.className = "status-dot dot-error";
-      el.imgHint.textContent = "Error: " + e.message + " — run server/main.py first";
-    }
-    el.imgTestBtn.textContent = "Test";
-    el.imgTestBtn.disabled = false;
-  });
-
-  el.imgToggleBtn.addEventListener("click", () => {
-    state.imgEnabled = !state.imgEnabled;
-    state.backendUrl = el.imgBackendUrl.value.trim();
-    state.sdModel = el.sdModel.value.trim();
-    if (state.imgEnabled) {
-      el.imgToggleBtn.textContent = "Images On";
-      el.imgToggleBtn.classList.remove("img-off-btn");
-      el.imgToggleBtn.classList.add("img-on-btn");
-      el.imgDot.className = "status-dot dot-ok";
-      el.imgHint.textContent = "Images on — SD generates real photos.";
-    } else {
-      el.imgToggleBtn.textContent = "Images Off";
-      el.imgToggleBtn.classList.add("img-off-btn");
-      el.imgToggleBtn.classList.remove("img-on-btn");
-      el.imgDot.className = "status-dot dot-unknown";
-      el.imgHint.textContent = "Images off — using gradient placeholders.";
-    }
-  });
-}
-
-async function submitJobToBackend(localJob) {
-  const base = state.backendUrl.replace(/\/$/, "");
-  try {
-    const res = await fetch(base + "/api/generate/image", {
+    const resp = await fetch(base + "/api/generate/image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: localJob.prompt,
-        model_id: state.sdModel || "runwayml/stable-diffusion-v1-5",
-        persona: state.persona,
-        steps: 25,
-        width: 512,
-        height: 512,
-      }),
-      signal: AbortSignal.timeout(8000),
+      body: JSON.stringify({ prompt, steps: 20, width: 512, height: 512, persona: char.name }),
     });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    localJob.backend_job_id = data.job_id;
-    persistJobs();
-    pollBackendJob(localJob.id, data.job_id);
-  } catch (e) {
-    console.warn("Image backend unavailable, falling back to simulation:", e.message);
-    showToast("Image backend unreachable — using placeholder", "warn");
-    // Allow local scheduler to pick up the job normally
-    localJob.backend_job_id = null;
+    if (!resp.ok) return;
+    const { job_id } = await resp.json();
+    const dataUrl = await pollForResult(job_id);
+    if (dataUrl && state.callInterval) {
+      const photo = $("callPortraitPhoto");
+      if (photo) {
+        photo.src = dataUrl;
+        photo.classList.add("loaded");
+        const emoji = $("callPortraitEmoji");
+        if (emoji) emoji.classList.add("hidden");
+      }
+    }
+  } catch {}
+}
+
+// ── Local Camera (WebRTC getUserMedia) ─────────────────────────────────────
+async function startLocalCamera() {
+  const vid = $("localVideo");
+  if (!vid) return;
+  try {
+    state.localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+    vid.srcObject = state.localStream;
+    vid.classList.remove("hidden");
+  } catch {
+    vid.classList.add("hidden");
   }
 }
 
-function pollBackendJob(localJobId, backendJobId) {
-  const base = state.backendUrl.replace(/\/$/, "");
-  const interval = setInterval(async () => {
-    const localJob = state.jobs.find((j) => j.id === localJobId);
-    if (!localJob) { clearInterval(interval); return; }
+function stopLocalCamera() {
+  if (state.localStream) {
+    state.localStream.getTracks().forEach(t => t.stop());
+    state.localStream = null;
+  }
+  const vid = $("localVideo");
+  if (vid) { vid.srcObject = null; vid.classList.add("hidden"); }
+}
 
+// ── Settings ───────────────────────────────────────────────────────────────
+function bindSettings() {
+  $("settingsBtn").addEventListener("click", () => $("settingsModal").classList.remove("hidden"));
+  $("closeSettingsBtn").addEventListener("click", () => $("settingsModal").classList.add("hidden"));
+  $("settingsModal").addEventListener("click", e => {
+    if (e.target === $("settingsModal")) $("settingsModal").classList.add("hidden");
+  });
+
+  $("vllmTestBtn").addEventListener("click", async () => {
+    $("vllmTestBtn").textContent = "测试中…";
+    const url = $("vllmUrl").value.trim().replace(/\/$/, "");
     try {
-      const res = await fetch(base + "/api/jobs/" + backendJobId,
-        { signal: AbortSignal.timeout(5000) });
-      if (!res.ok) return;
-      const data = await res.json();
+      const r = await fetch(url + "/v1/models", { signal: AbortSignal.timeout(4000) });
+      const d = await r.json();
+      const model = d.data?.[0]?.id || "";
+      if (model && !$("vllmModel").value) $("vllmModel").value = model;
+      $("vllmHint").textContent = "✅ 连接成功" + (model ? " · 模型: " + model : "");
+    } catch (e) { $("vllmHint").textContent = "❌ 连接失败: " + e.message; }
+    $("vllmTestBtn").textContent = "测试连接";
+  });
 
-      // Sync progress to sidebar
-      if (typeof data.progress === "number") {
-        localJob.progress = data.progress;
-        renderJobs();
+  $("vllmToggle").addEventListener("click", () => {
+    state.vllmUrl = $("vllmUrl").value.trim();
+    state.vllmModel = $("vllmModel").value.trim();
+    state.vllmEnabled = !state.vllmEnabled;
+    const btn = $("vllmToggle");
+    btn.textContent = state.vllmEnabled ? "✅ AI 已开启" : "AI 已关闭";
+    btn.classList.toggle("on",  state.vllmEnabled);
+    btn.classList.toggle("off", !state.vllmEnabled);
+  });
+
+  $("sdTestBtn").addEventListener("click", async () => {
+    $("sdTestBtn").textContent = "测试中…";
+    const url = $("sdUrl").value.trim().replace(/\/$/, "");
+    try {
+      const r = await fetch(url + "/health", { signal: AbortSignal.timeout(4000) });
+      const d = await r.json();
+      $("sdHint").textContent = d.ok
+        ? "✅ 连接成功 · 设备: " + d.device + (d.model_loaded ? " · 已加载: " + d.model_loaded : "")
+        : "❌ 后端异常";
+    } catch (e) { $("sdHint").textContent = "❌ 连接失败: " + e.message; }
+    $("sdTestBtn").textContent = "测试连接";
+  });
+
+  $("sdToggle").addEventListener("click", () => {
+    state.sdUrl = $("sdUrl").value.trim();
+    state.sdEnabled = !state.sdEnabled;
+    localStorage.setItem("aig_sd_url", state.sdUrl);
+    const btn = $("sdToggle");
+    btn.textContent = state.sdEnabled ? "✅ 图像已开启" : "图像已关闭";
+    btn.classList.toggle("on",  state.sdEnabled);
+    btn.classList.toggle("off", !state.sdEnabled);
+    if (state.sdEnabled) autoGenerateMissingPortraits();
+  });
+
+  $("clearCacheBtn").addEventListener("click", () => {
+    clearPortraitCache();
+    CHARACTERS.forEach(c => {
+      const photo = $("cphoto-" + c.id);
+      const emoji = $("cemoji-" + c.id);
+      const badge = $("cbadge-" + c.id);
+      if (photo) { photo.src = ""; photo.classList.remove("loaded"); }
+      if (emoji) emoji.classList.remove("hidden");
+      if (badge) badge.classList.remove("hidden");
+    });
+    $("sdHint").textContent = "缓存已清除，重新开启图像即可重新生成";
+    $("settingsModal").classList.add("hidden");
+    if (state.sdEnabled) autoGenerateMissingPortraits();
+  });
+}
+
+// ── Memory System ──────────────────────────────────────────────────────────
+function loadCharMemory(charId) {
+  try {
+    return JSON.parse(localStorage.getItem(state._memKey) || "{}")[charId] || [];
+  } catch { return []; }
+}
+
+function saveCharMemory(charId, items) {
+  try {
+    const all = JSON.parse(localStorage.getItem(state._memKey) || "{}");
+    all[charId] = items;
+    localStorage.setItem(state._memKey, JSON.stringify(all));
+  } catch {}
+}
+
+function getPinnedMemorySummary() {
+  const charId = state.currentChar?.id;
+  if (!charId) return "";
+  const pinned = loadCharMemory(charId).filter(m => m.pinned);
+  return pinned.map(m => m.text).join("\n");
+}
+
+function renderMemory() {
+  const charId = state.currentChar?.id;
+  if (!charId) return;
+  const items = loadCharMemory(charId);
+  const list = $("memoryList");
+  if (!list) return;
+  if (items.length === 0) {
+    list.innerHTML = '<div class="memory-empty">还没有记忆<br><small>聊天时会自动保存重要信息</small></div>';
+    return;
+  }
+  const sorted = [...items].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+  list.innerHTML = sorted.map(item => `
+    <div class="memory-item ${item.pinned ? "pinned" : ""}">
+      <div class="memory-text">${escHtml(item.text)}</div>
+      <div class="memory-actions">
+        <button class="mem-btn" onclick="togglePin('${charId}','${item.id}')" title="${item.pinned ? "取消置顶" : "置顶"}">
+          ${item.pinned ? "📌" : "📍"}
+        </button>
+        <button class="mem-btn" onclick="deleteMem('${charId}','${item.id}')">🗑</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function addMem(charId, text, pinned = false) {
+  const items = loadCharMemory(charId);
+  items.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), text: text.trim(), pinned, ts: Date.now() });
+  saveCharMemory(charId, items);
+  renderMemory();
+}
+
+function deleteMem(charId, id) {
+  saveCharMemory(charId, loadCharMemory(charId).filter(m => m.id !== id));
+  renderMemory();
+}
+
+function togglePin(charId, id) {
+  const items = loadCharMemory(charId);
+  const m = items.find(m => m.id === id);
+  if (m) { m.pinned = !m.pinned; saveCharMemory(charId, items); renderMemory(); }
+}
+
+function autoExtractMemory(userText) {
+  const charId = state.currentChar?.id;
+  if (!charId) return;
+  const patterns = [
+    /我叫(.{2,6})[，。！\s]/,
+    /我的名字是(.{2,6})[，。！\s]/,
+    /我在(.{2,12})工作/,
+    /我是做(.{2,10})的/,
+    /我喜欢(.{2,12})[，。！\s]/,
+    /我不喜欢(.{2,12})[，。！\s]/,
+    /我住在(.{2,10})[，。！\s]/,
+    /我今年(.{2,4})岁/,
+  ];
+  for (const p of patterns) {
+    const m = userText.match(p);
+    if (m) {
+      const info = userText.length > 42 ? userText.slice(0, 42) + "…" : userText;
+      const existing = loadCharMemory(charId);
+      if (!existing.some(mem => mem.text.includes(m[1]))) {
+        addMem(charId, info, false);
+        flashMemoryBtn();
       }
+      break;
+    }
+  }
+}
 
-      if (data.status === "done" && data.result_b64) {
-        clearInterval(interval);
-        localJob.status = "done";
-        localJob.progress = 100;
-        persistJobs();
-        renderJobs();
-        pushRealImageToChat(localJob, data.result_b64);
-        showToast("Image ready — generated with SD", "ok");
-      } else if (data.status === "error") {
-        clearInterval(interval);
-        localJob.status = "done";
-        persistJobs();
-        renderJobs();
-        showToast("Image generation failed: " + (data.error || "unknown error"), "warn");
+function flashMemoryBtn() {
+  const btn = $("memoryBtn");
+  if (!btn) return;
+  btn.textContent = "🧠✨";
+  setTimeout(() => { btn.textContent = "🧠"; }, 1800);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function bindMemory() {
+  const drawer = $("memoryDrawer");
+  if (!drawer) return;
+
+  $("memoryBtn")?.addEventListener("click", () => {
+    renderMemory();
+    drawer.classList.remove("hidden");
+  });
+  $("memoryBackdrop")?.addEventListener("click", () => drawer.classList.add("hidden"));
+  $("closeMemoryBtn")?.addEventListener("click", () => drawer.classList.add("hidden"));
+
+  $("addMemoryBtn")?.addEventListener("click", () => {
+    const form = $("memoryAddForm");
+    form.classList.toggle("hidden");
+    if (!form.classList.contains("hidden")) $("memoryInput")?.focus();
+  });
+
+  $("saveMemoryBtn")?.addEventListener("click", () => {
+    const text = $("memoryInput")?.value.trim();
+    if (!text || !state.currentChar) return;
+    addMem(state.currentChar.id, text, $("memoryPinCheck")?.checked || false);
+    $("memoryInput").value = "";
+    if ($("memoryPinCheck")) $("memoryPinCheck").checked = false;
+    $("memoryAddForm").classList.add("hidden");
+  });
+}
+
+// ── Media Queue ─────────────────────────────────────────────────────────────
+function addToQueue(type, prompt, credits = 5) {
+  const id = ++state._queueId;
+  const eta = 15 + Math.floor(Math.random() * 15);
+  const gpu = Math.floor(Math.random() * 4);
+  const job = { id, type, prompt: prompt.length > 50 ? prompt.slice(0, 50) + "…" : prompt,
+    status: "pending", eta, maxEta: eta, gpu, credits, ts: Date.now(), elapsed: 0 };
+  state.mediaQueue.unshift(job);
+  renderQueue();
+  updateQueueBadge();
+  simulateQueueJob(job);
+  return job;
+}
+
+function simulateQueueJob(job) {
+  setTimeout(() => {
+    job.status = "running";
+    renderQueue(); updateQueueBadge();
+    const tick = setInterval(() => {
+      job.eta = Math.max(0, job.eta - 1);
+      job.elapsed++;
+      renderQueue();
+      if (job.eta <= 0) {
+        clearInterval(tick);
+        job.status = "done";
+        renderQueue(); updateQueueBadge();
       }
-    } catch (_) { /* continue polling silently */ }
-  }, 2000);
+    }, 1000);
+  }, 1000 + Math.random() * 800);
 }
 
-function pushRealImageToChat(job, imgDataUrl) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "message bot media-result-card";
-  wrapper.innerHTML =
-    "<small>generated · " + job.lane + " · " + job.credits + " credits · " +
-      (job.backend_job_id ? state.sdModel.split("/").pop() : "simulation") +
-    "</small>" +
-    '<img class="real-gen-image" src="' + imgDataUrl +
-    '" alt="' + escapeHtml(truncate(job.prompt, 60)) + '" />';
-  el.chatLog.appendChild(wrapper);
-  el.chatLog.scrollTop = el.chatLog.scrollHeight;
+function renderQueue() {
+  const list = $("queueList");
+  const empty = $("queueEmpty");
+  if (!list || !empty) return;
+
+  if (state.mediaQueue.length === 0) {
+    empty.classList.remove("hidden");
+    list.innerHTML = "";
+    return;
+  }
+  empty.classList.add("hidden");
+
+  const icons  = { pending: "⏳", running: "⚙️", done: "✅", error: "❌" };
+  const colors = { pending: "#666", running: "#f59e0b", done: "#4ade80", error: "#f87171" };
+
+  list.innerHTML = state.mediaQueue.map(job => {
+    const pct = job.status === "running"
+      ? Math.min(95, Math.round(job.elapsed / (job.elapsed + job.eta + 0.01) * 100))
+      : (job.status === "done" ? 100 : 0);
+    return `
+      <div class="queue-item ${job.status}">
+        <div class="queue-item-head">
+          <span class="queue-type-tag">${job.type === "image" ? "🖼 图像" : "🎬 视频"}</span>
+          <span class="queue-status" style="color:${colors[job.status]}">
+            ${icons[job.status]} ${job.status === "running" ? job.eta + "s" : job.status}
+          </span>
+        </div>
+        <div class="queue-prompt-text">${escHtml(job.prompt)}</div>
+        <div class="queue-meta-row">
+          <span class="queue-chip">GPU ${job.gpu}</span>
+          <span class="queue-chip">${job.credits} 积分</span>
+        </div>
+        ${job.status !== "pending" ? `
+          <div class="queue-progress-bar">
+            <div class="queue-progress-fill" style="width:${pct}%"></div>
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }).join("");
 }
 
-// ─── ID helper ───────────────────────────────────────────────────────────────
-function makeId() {
-  if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
-  return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+function updateQueueBadge() {
+  const badge = $("queueBadge");
+  if (!badge) return;
+  const n = state.mediaQueue.filter(j => j.status === "pending" || j.status === "running").length;
+  badge.textContent = n;
+  badge.classList.toggle("hidden", n === 0);
 }
+
+function bindQueue() {
+  const drawer = $("queueDrawer");
+  if (!drawer) return;
+
+  $("queueBtn")?.addEventListener("click", () => {
+    renderQueue();
+    drawer.classList.remove("hidden");
+  });
+  $("queueBackdrop")?.addEventListener("click", () => drawer.classList.add("hidden"));
+  $("closeQueueBtn")?.addEventListener("click", () => drawer.classList.add("hidden"));
+
+  $("genImgBtn")?.addEventListener("click", () => {
+    if (!state.currentChar) return;
+    const char = state.currentChar;
+    const exprSuffix = char.expressions[state.currentExpr] || char.expressions.neutral;
+    addToQueue("image", char.portrait_prompt + exprSuffix, 5);
+    if (state.sdEnabled) generateAndCachePortrait(char);
+    renderQueue();
+    $("queueDrawer").classList.remove("hidden");
+  });
+}
+
+// ── STT Mic (Web Speech API) ───────────────────────────────────────────────
+function bindMic() {
+  $("micBtn")?.addEventListener("click", toggleMic);
+}
+
+function toggleMic() {
+  if (state.recording) { stopMic(); } else { startMic(); }
+}
+
+function startMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    const input = $("msgInput");
+    if (input) input.placeholder = "浏览器不支持语音，请使用 Chrome";
+    return;
+  }
+  const r = new SR();
+  r.lang = "zh-CN";
+  r.continuous = false;
+  r.interimResults = true;
+
+  r.onstart = () => {
+    state.recording = true;
+    const btn = $("micBtn");
+    if (btn) { btn.textContent = "🔴"; btn.classList.add("recording"); }
+  };
+
+  r.onresult = e => {
+    const transcript = Array.from(e.results).map(r => r[0].transcript).join("");
+    const input = $("msgInput");
+    if (input) input.value = transcript;
+  };
+
+  r.onend = () => {
+    state.recording = false;
+    state.recognition = null;
+    const btn = $("micBtn");
+    if (btn) { btn.textContent = "🎙"; btn.classList.remove("recording"); }
+    // Auto-send if we got text
+    const input = $("msgInput");
+    if (input?.value.trim()) sendMessage();
+  };
+
+  r.onerror = () => {
+    state.recording = false;
+    state.recognition = null;
+    const btn = $("micBtn");
+    if (btn) { btn.textContent = "🎙"; btn.classList.remove("recording"); }
+  };
+
+  r.start();
+  state.recognition = r;
+  state.recording = true;
+}
+
+function stopMic() {
+  state.recognition?.stop();
+  state.recognition = null;
+  state.recording = false;
+  const btn = $("micBtn");
+  if (btn) { btn.textContent = "🎙"; btn.classList.remove("recording"); }
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+function showView(id) {
+  document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
+  $(id).classList.remove("hidden");
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
